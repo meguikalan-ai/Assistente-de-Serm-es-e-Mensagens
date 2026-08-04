@@ -7,3 +7,12 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <App />
   </React.StrictMode>,
 )
+
+// Registro do Service Worker (necessário para o app ser instalável como PWA)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
+      console.error('Falha ao registrar o Service Worker:', err)
+    })
+  })
+}
