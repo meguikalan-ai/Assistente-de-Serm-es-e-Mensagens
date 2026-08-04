@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-
+import { supabase } from "./supabaseClient";
 const G = "#c9a227", D = "#1a1207";
 
 const VERSOES = [
@@ -98,8 +98,27 @@ const INTENSIDADES = ["Leve","Moderado","Forte"];
 
 const rn = n => ["I","II","III","IV","V"][n-1] || n;
 
-async function loadSermons() { try { const r = await window.storage.get("sermons-list"); return r ? JSON.parse(r.value) : []; } catch { return []; } }
-async function saveSermons(l) { try { await window.storage.set("sermons-list", JSON.stringify(l)); } catch {} }
+async function loadSermons() {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data, error } = await supabase.from("sermons").select("data").eq("user_id", user.id).maybeSingle();
+    if (error) { console.error("Erro ao carregar biblioteca:", error); return []; }
+    return data ? data.data : [];
+  } catch (e) { console.error("Erro ao carregar biblioteca:", e); return []; }
+}
+
+async function saveSermons(l) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase.from("sermons").upsert(
+      { user_id: user.id, data: l, updated_at: new Date().toISOString() },
+      { onConflict: "user_id" }
+    );
+    if (error) console.error("Erro ao salvar biblioteca:", error);
+  } catch (e) { console.error("Erro ao salvar biblioteca:", e); }
+}
 
 async function callAPI(system, content, tokens) {
   tokens = tokens || 8000;
@@ -936,6 +955,7 @@ export default function App() {
         <p style={{ margin:"0 0 10px", fontSize:12, color:G, fontStyle:"italic" }}>Pr. Fernando Veiga</p>
         <div style={{ display:"flex", justifyContent:"center", gap:6, flexWrap:"wrap" }}>
           {NAV.map(([id,lbl]) => <button key={id} onClick={() => setMainView(id)} style={bS(mainView===id)}>{lbl}</button>)}
+          <button onClick={() => supabase.auth.signOut()} style={{ padding:"8px 14px", borderRadius:20, border:"1px solid #5a3f10", background:"transparent", color:"#a08040", fontSize:13, cursor:"pointer", fontFamily:"Georgia,serif" }}>Sair</button>
         </div>
       </div>
 
