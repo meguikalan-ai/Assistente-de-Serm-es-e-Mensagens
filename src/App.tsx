@@ -124,7 +124,7 @@ async function callAPI(system, content, tokens) {
   tokens = tokens || 8000;
   let data, att = 0;
   while (att < 4) {
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
+    const r = await fetch("/api/anthropic", {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:tokens, system, messages:[{role:"user",content}] })
     });
@@ -143,7 +143,7 @@ async function callAPIChat(system, messages, tokens) {
   tokens = tokens || 4000;
   let data, att = 0;
   while (att < 4) {
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
+    const r = await fetch("/api/anthropic", {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:tokens, system, messages })
     });
@@ -555,7 +555,7 @@ function PainelRefinador({ onSaveLibrary }) {
       }
       let data, att=0;
       while (att<4) {
-        const r = await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:8000,system:sys,messages:msgs})});
+        const r = await fetch("/api/anthropic",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:8000,system:sys,messages:msgs})});
         data = await r.json();
         if (!data.error||data.error.type!=="overloaded_error") break;
         att++; if(att<4) await new Promise(r=>setTimeout(r,3000*att));
