@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabaseClient";
 const G = "#c9a227", D = "#1a1207";
 
@@ -350,22 +350,24 @@ function exportPDF(s) {
   setTimeout(() => a.remove(), 500);
 }
 
-function HistModal({ sermon, onSave, onClose }) {
+function HistModal({ sermon, onSave, onClose, initialTempo, initialObservacao }) {
   const [local, setLocal] = useState(""), [evento, setEvento] = useState(""), [data, setData] = useState(new Date().toLocaleDateString("pt-BR"));
+  const [tempo, setTempo] = useState(initialTempo||""), [observacao, setObservacao] = useState(initialObservacao||"");
   const hist = sermon.historico||[];
-  const add = () => { if (!local.trim()) return; onSave([...hist,{data,local,evento}]); setLocal(""); setEvento(""); };
+  const add = () => { if (!local.trim()) return; onSave([...hist,{data,local,evento,tempo,observacao}]); setLocal(""); setEvento(""); setTempo(""); setObservacao(""); };
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.8)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
       <div style={{ background:"#2a1c05", border:"1px solid " + G, borderRadius:12, padding:24, width:"100%", maxWidth:480, maxHeight:"80vh", overflowY:"auto" }}>
         <h3 style={{ color:G, fontSize:16, margin:"0 0 14px" }}>Historico de Pregacao</h3>
         {hist.length===0 ? <p style={{ color:"#7a5a30", fontStyle:"italic", fontSize:13, marginBottom:12 }}>Nenhuma pregacao registrada.</p>
           : hist.map((h,i) => <div key={i} style={{ background:"rgba(201,162,39,0.08)", border:"1px solid #5a3f10", borderRadius:8, padding:10, marginBottom:8, display:"flex", justifyContent:"space-between" }}>
-            <div><div style={{ fontSize:12, color:G }}>{h.data}</div><div style={{ fontSize:14, color:"#f0e0b8" }}>{h.local}</div>{h.evento&&<div style={{ fontSize:12, color:"#a08040", fontStyle:"italic" }}>{h.evento}</div>}</div>
+            <div><div style={{ fontSize:12, color:G }}>{h.data}{h.tempo?" - "+h.tempo:""}</div><div style={{ fontSize:14, color:"#f0e0b8" }}>{h.local}</div>{h.evento&&<div style={{ fontSize:12, color:"#a08040", fontStyle:"italic" }}>{h.evento}</div>}{h.observacao&&<div style={{ fontSize:12, color:"#c0a060", marginTop:4, fontStyle:"italic" }}>{h.observacao}</div>}</div>
             <button onClick={() => onSave(hist.filter((_,j) => j!==i))} style={{ background:"none", border:"none", color:"#e08080", cursor:"pointer" }}>X</button>
           </div>)}
         <div style={{ borderTop:"1px solid #5a3f10", paddingTop:12, display:"grid", gap:8 }}>
-          {[{v:data,s:setData,p:"Data"},{v:local,s:setLocal,p:"Igreja / Local *"},{v:evento,s:setEvento,p:"Evento (opcional)"}].map((f,i) =>
+          {[{v:data,s:setData,p:"Data"},{v:local,s:setLocal,p:"Igreja / Local *"},{v:evento,s:setEvento,p:"Evento (opcional)"},{v:tempo,s:setTempo,p:"Tempo de Pregacao (opcional)"}].map((f,i) =>
             <input key={i} value={f.v} onChange={e => f.s(e.target.value)} placeholder={f.p} style={{ padding:"8px 12px", borderRadius:6, border:"1px solid #7a5a15", background:"rgba(255,255,255,0.05)", color:"#f5e6c8", fontFamily:"Georgia,serif", fontSize:13, outline:"none" }} />)}
+          <textarea value={observacao} onChange={e => setObservacao(e.target.value)} placeholder="Observacao (opcional)" style={{ padding:"8px 12px", borderRadius:6, border:"1px solid #7a5a15", background:"rgba(255,255,255,0.05)", color:"#f5e6c8", fontFamily:"Georgia,serif", fontSize:13, outline:"none", minHeight:60, resize:"vertical" }} />
           <button onClick={add} disabled={!local.trim()} style={{ padding:"9px", borderRadius:6, border:"none", background:local.trim() ? "linear-gradient(135deg," + G + ",#a07820)" : "#6b5010", color:D, fontWeight:"bold", fontSize:13, cursor:local.trim()?"pointer":"not-allowed", fontFamily:"Georgia,serif" }}>+ Adicionar</button>
         </div>
         <button onClick={onClose} style={{ marginTop:10, width:"100%", padding:"8px", borderRadius:6, border:"1px solid #5a3f10", background:"transparent", color:"#a08040", fontSize:13, cursor:"pointer", fontFamily:"Georgia,serif" }}>Fechar</button>
@@ -374,36 +376,103 @@ function HistModal({ sermon, onSave, onClose }) {
   );
 }
 
-function Apresentacao({ sermon, onClose }) {
-  const [idx, setIdx] = useState(0), [fs, setFs] = useState(28);
-  const slides = [
-    { tipo:"capa" },
-    { tipo:"texto", label:"INTRODUCAO", conteudo:sermon.introducao },
-    ...(sermon.pontos||[]).map(pt => ({ tipo:"ponto", pt })),
-    { tipo:"texto", label:"CONCLUSAO", conteudo:sermon.conclusao },
-    { tipo:"apelo", conteudo:sermon.apelo },
+function ModoPregacao({ sermon, onClose, onFinalizar }) {
+  const [fs, setFs] = useState(19);
+  const [temaClaro, setTemaClaro] = useState(false);
+  const [showSecoes, setShowSecoes] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+  const wakeLockRef = useRef(null);
+  const refs = useRef({});
+
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => setSeconds(s => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [running]);
+
+  useEffect(() => () => { if (wakeLockRef.current) wakeLockRef.current.release().catch(() => {}); }, []);
+
+  const pedirWakeLock = async () => { try { if ("wakeLock" in navigator) wakeLockRef.current = await navigator.wakeLock.request("screen"); } catch(e) {} };
+  const liberarWakeLock = () => { if (wakeLockRef.current) { wakeLockRef.current.release().catch(() => {}); wakeLockRef.current = null; } };
+  const iniciar = () => { setRunning(true); pedirWakeLock(); };
+  const formatarTempo = s => { const m = Math.floor(s/60), r = s%60; return String(m).padStart(2,"0") + ":" + String(r).padStart(2,"0"); };
+  const finalizar = () => { setRunning(false); liberarWakeLock(); onFinalizar(formatarTempo(seconds)); };
+
+  const secoes = [
+    { id:"introducao", label:"Introducao" },
+    ...(sermon.pontos||[]).map(pt => ({ id:"ponto"+pt.numero, label:"Ponto " + rn(pt.numero) + " - " + pt.titulo })),
+    { id:"conclusao", label:"Conclusao" },
+    { id:"apelo", label:"Apelo" },
   ];
-  const sl = slides[idx];
+  const irPara = id => { setShowSecoes(false); const el = refs.current[id]; if (el) el.scrollIntoView({ behavior:"smooth", block:"start" }); };
+
+  const bg = temaClaro ? "#f5ecd8" : "#080604";
+  const fg = temaClaro ? "#3a2a10" : "#f0e0b8";
+  const fgTitulo = temaClaro ? "#7a4a08" : "#f0d080";
+  const fgSub = temaClaro ? "#8a6a30" : "#a08040";
+  const barraBg = temaClaro ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.6)";
+  const barraBorda = temaClaro ? "#d8c090" : "#3a2a08";
+  const para = txt => (txt||"").split("\n").filter(Boolean).map((p,i) => <p key={i} style={{ lineHeight:1.85, fontSize:fs, marginBottom:12 }}>{p}</p>);
+  const TAMS = [16,19,22,26,30];
+
   return (
-    <div style={{ position:"fixed", inset:0, background:"#080604", zIndex:300, display:"flex", flexDirection:"column", color:"#f5e6c8" }}>
-      <div style={{ display:"flex", gap:8, padding:"8px 16px", background:"rgba(0,0,0,0.6)", alignItems:"center", flexWrap:"wrap" }}>
-        <button onClick={onClose} style={{ padding:"5px 12px", borderRadius:16, border:"1px solid #5a3f10", background:"transparent", color:G, fontSize:12, cursor:"pointer" }}>X Fechar</button>
-        <button onClick={() => setIdx(i => Math.max(i-1,0))} disabled={idx===0} style={{ padding:"5px 12px", borderRadius:16, border:"1px solid #5a3f10", background:"transparent", color:G, fontSize:12, cursor:"pointer" }}>Anterior</button>
-        <span style={{ fontSize:12, color:"#7a5a30" }}>{idx+1}/{slides.length}</span>
-        <button onClick={() => setIdx(i => Math.min(i+1,slides.length-1))} disabled={idx===slides.length-1} style={{ padding:"5px 12px", borderRadius:16, border:"1px solid #5a3f10", background:"transparent", color:G, fontSize:12, cursor:"pointer" }}>Proximo</button>
-        <div style={{ marginLeft:"auto", display:"flex", gap:5 }}>
-          {[22,28,34,40].map(f => <button key={f} onClick={() => setFs(f)} style={{ padding:"3px 7px", borderRadius:6, border:"1px solid " + (fs===f?G:"#5a3f10"), background:fs===f?"rgba(201,162,39,0.2)":"transparent", color:fs===f?G:"#7a5a30", fontSize:11, cursor:"pointer" }}>{f}</button>)}
+    <div style={{ position:"fixed", inset:0, background:bg, zIndex:300, display:"flex", flexDirection:"column", color:fg }}>
+      <style>{"@keyframes piscarGrava { 0%,100%{opacity:1} 50%{opacity:0.15} }"}</style>
+      <div style={{ display:"flex", gap:8, padding:"9px 12px", background:barraBg, alignItems:"center", flexWrap:"wrap", borderBottom:"1px solid " + barraBorda }}>
+        <button onClick={onClose} style={{ padding:"5px 12px", borderRadius:16, border:"1px solid #8a6a20", background:"transparent", color:G, fontSize:12, cursor:"pointer" }}>X Fechar</button>
+        <button onClick={() => setShowSecoes(true)} style={{ padding:"5px 12px", borderRadius:16, border:"1px solid #8a6a20", background:"transparent", color:G, fontSize:12, cursor:"pointer" }}>Secoes</button>
+        <div style={{ display:"flex", gap:4 }}>
+          {TAMS.map(f => <button key={f} onClick={() => setFs(f)} style={{ width:26, height:26, borderRadius:6, border:"1px solid " + (fs===f?G:"#8a6a20"), background:fs===f?"rgba(201,162,39,0.2)":"transparent", color:fs===f?G:"#8a6a20", fontSize:11, cursor:"pointer" }}>A</button>)}
+        </div>
+        <button onClick={() => setTemaClaro(t => !t)} style={{ padding:"5px 12px", borderRadius:16, border:"1px solid #8a6a20", background:"transparent", color:G, fontSize:12, cursor:"pointer" }}>{temaClaro ? "Modo Noturno" : "Modo Claro"}</button>
+        <div style={{ marginLeft:"auto", display:"flex", gap:8, alignItems:"center" }}>
+          {running && <span style={{ width:8, height:8, borderRadius:"50%", background:"#e05050", animation:"piscarGrava 1s infinite" }} />}
+          <span style={{ fontSize:14, color:G, fontWeight:"bold" }}>{formatarTempo(seconds)}</span>
+          {!running
+            ? <button onClick={iniciar} style={{ padding:"6px 14px", borderRadius:16, border:"none", background:"linear-gradient(135deg," + G + ",#a07820)", color:D, fontWeight:"bold", fontSize:12, cursor:"pointer" }}>Iniciar</button>
+            : <button onClick={finalizar} style={{ padding:"6px 14px", borderRadius:16, border:"none", background:"#8a3030", color:"#fff", fontWeight:"bold", fontSize:12, cursor:"pointer" }}>Finalizar Pregacao</button>}
         </div>
       </div>
-      <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 60px", overflowY:"auto" }}>
-        {sl.tipo==="capa" && <div style={{ textAlign:"center" }}><div style={{ fontSize:13, color:G, letterSpacing:3, marginBottom:14 }}>{sermon.pericope}</div><div style={{ fontSize:fs+10, color:"#f0d080", fontWeight:"bold", lineHeight:1.3, marginBottom:18 }}>{sermon.titulo}</div><div style={{ fontSize:fs-6, color:"#a08040", fontStyle:"italic" }}>{sermon.tema}</div><div style={{ fontSize:13, color:"#7a5a30", marginTop:20 }}>Pr. Fernando Veiga</div></div>}
-        {sl.tipo==="texto" && <div style={{ maxWidth:860, width:"100%" }}><div style={{ fontSize:12, color:G, letterSpacing:3, marginBottom:18 }}>{sl.label}</div><div style={{ fontSize:fs, lineHeight:1.8, color:"#f0e0b8" }}>{(sl.conteudo||"").split("\n").filter(Boolean).join("\n\n")}</div></div>}
-        {sl.tipo==="ponto" && <div style={{ maxWidth:860, width:"100%" }}><div style={{ fontSize:12, color:G, letterSpacing:3, marginBottom:8 }}>PONTO {rn(sl.pt.numero)}</div><div style={{ fontSize:fs+4, color:"#f0d080", fontWeight:"bold", borderLeft:"4px solid " + G, paddingLeft:20, marginBottom:22 }}>{sl.pt.titulo}</div><div style={{ fontSize:fs, lineHeight:1.8, color:"#f0e0b8" }}>{(sl.pt.exposicao||"").split("\n").filter(Boolean).join("\n\n")}</div>{sl.pt.aplicacao&&<div style={{ background:"rgba(40,80,40,0.2)", border:"1px solid #3a6030", borderRadius:8, padding:14, marginTop:12, fontSize:fs-4, color:"#c0e0c0" }}>{sl.pt.aplicacao}</div>}</div>}
-        {sl.tipo==="apelo" && <div style={{ maxWidth:860, width:"100%", background:"rgba(80,50,120,0.15)", border:"2px solid #7050a0", borderRadius:16, padding:40 }}><div style={{ fontSize:12, color:"#b090e0", letterSpacing:3, marginBottom:18 }}>APELO</div><div style={{ fontSize:fs, lineHeight:1.8, color:"#e0d0f8" }}>{(sl.conteudo||"").split("\n").filter(Boolean).join("\n\n")}</div></div>}
+
+      <div style={{ flex:1, overflowY:"auto", padding:"28px 18px 80px" }}>
+        <div style={{ maxWidth:720, margin:"0 auto" }}>
+          <div style={{ textAlign:"center", marginBottom:28 }}>
+            <div style={{ fontSize:12, color:G, letterSpacing:2 }}>{sermon.pericope}</div>
+            <h2 style={{ fontSize:fs+8, color:fgTitulo, margin:"8px 0" }}>{sermon.titulo}</h2>
+            <div style={{ fontSize:fs-4, fontStyle:"italic", color:fgSub }}>{sermon.tema}</div>
+          </div>
+
+          <div ref={el => refs.current["introducao"]=el} style={{ marginBottom:28 }}>
+            <div style={{ fontSize:12, color:G, letterSpacing:2, marginBottom:10 }}>INTRODUCAO</div>
+            {para(sermon.introducao)}
+          </div>
+
+          {(sermon.pontos||[]).map(pt => <div key={pt.numero} ref={el => refs.current["ponto"+pt.numero]=el} style={{ marginBottom:28 }}>
+            <div style={{ fontSize:12, color:G, letterSpacing:2, marginBottom:6 }}>PONTO {rn(pt.numero)}</div>
+            <h3 style={{ fontSize:fs+3, color:fgTitulo, borderLeft:"4px solid " + G, paddingLeft:16, marginBottom:14 }}>{pt.titulo}</h3>
+            {para(pt.exposicao)}
+            {pt.aplicacao && <div style={{ background: temaClaro ? "rgba(40,120,40,0.1)" : "rgba(40,80,40,0.2)", border:"1px solid #3a6030", borderRadius:8, padding:14, fontSize:fs-3, color: temaClaro ? "#2a5a2a" : "#c0e0c0" }}>{pt.aplicacao}</div>}
+          </div>)}
+
+          <div ref={el => refs.current["conclusao"]=el} style={{ marginBottom:28 }}>
+            <div style={{ fontSize:12, color:G, letterSpacing:2, marginBottom:10 }}>CONCLUSAO</div>
+            {para(sermon.conclusao)}
+          </div>
+
+          <div ref={el => refs.current["apelo"]=el} style={{ background: temaClaro ? "rgba(120,80,180,0.08)" : "rgba(80,50,120,0.15)", border:"2px solid #7050a0", borderRadius:16, padding:22 }}>
+            <div style={{ fontSize:12, color:"#9070c0", letterSpacing:2, marginBottom:10 }}>APELO</div>
+            {para(sermon.apelo)}
+          </div>
+        </div>
       </div>
-      <div style={{ display:"flex", gap:4, padding:"8px", justifyContent:"center" }}>
-        {slides.map((_,i) => <button key={i} onClick={() => setIdx(i)} style={{ width:10, height:10, borderRadius:"50%", border:"none", background:i===idx?G:"#3a2a08", cursor:"pointer", padding:0 }} />)}
-      </div>
+
+      {showSecoes && <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:310, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }} onClick={() => setShowSecoes(false)}>
+        <div style={{ background:"#2a1c05", border:"1px solid " + G, borderRadius:12, padding:20, width:"100%", maxWidth:400, maxHeight:"70vh", overflowY:"auto" }} onClick={e => e.stopPropagation()}>
+          <h3 style={{ color:G, fontSize:15, margin:"0 0 12px" }}>Ir para secao</h3>
+          {secoes.map(s => <button key={s.id} onClick={() => irPara(s.id)} style={{ display:"block", width:"100%", textAlign:"left", padding:"10px 12px", borderRadius:8, border:"1px solid #5a3f10", background:"transparent", color:"#f0e0b8", fontSize:13, cursor:"pointer", marginBottom:6, fontFamily:"Georgia,serif" }}>{s.label}</button>)}
+        </div>
+      </div>}
     </div>
   );
 }
@@ -857,7 +926,7 @@ function SermonContent({ sermon, tab }) {
       {tab==="lexico"&&sermon.lexico&&<><h3 style={{ color:G, fontSize:14, marginTop:0 }}>ANALISE LEXICA</h3>{(sermon.lexico.palavras||[]).map((p,i) => <div key={i} style={{ background:"rgba(60,40,10,0.5)", border:"1px solid #7a5a15", borderRadius:10, padding:16, marginBottom:12 }}><div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:8 }}><span style={{ fontSize:20, color:"#f0d080", fontStyle:"italic" }}>{p.original}</span><span style={{ fontSize:13, color:"#a08040" }}>({p.transliteracao})</span><span style={{ fontSize:12, background:p.idioma==="Grego"?"rgba(70,100,180,0.3)":"rgba(180,100,40,0.3)", border:"1px solid " + (p.idioma==="Grego"?"#6080c0":"#c07040"), padding:"2px 8px", borderRadius:10, color:p.idioma==="Grego"?"#a0c0ff":"#ffa060" }}>{p.idioma}</span><span style={{ fontSize:13, color:G, fontWeight:"bold" }}>{p.traducao}</span></div><p style={{ margin:0, fontSize:14, color:"#e0d0a0", lineHeight:1.8 }}>{p.significado}</p></div>)}</>}
       {tab==="dinamicas"&&<PainelDinamicas sermon={sermon} />}
       {tab==="avaliacao"&&<PainelAvaliacao sermon={sermon} onAplicarMelhorias={s => { setSermon(s); setActiveTab("introducao"); setSaveMsg("Melhorias aplicadas com sucesso!"); setTimeout(()=>setSaveMsg(""),3000); }} />}
-      {tab==="historico"&&<><h3 style={{ color:G, fontSize:14, marginTop:0 }}>HISTORICO DE PREGACAO</h3>{(sermon.historico||[]).length===0?<p style={{ color:"#7a5a30", fontStyle:"italic" }}>Nenhuma pregacao registrada.</p>:(sermon.historico||[]).map((h,i) => <div key={i} style={{ background:"rgba(80,50,120,0.1)", border:"1px solid #6050a0", borderRadius:8, padding:12, marginBottom:8 }}><div style={{ fontSize:12, color:G, marginBottom:3 }}>{h.data}</div><div style={{ fontSize:14, color:"#f0e0b8" }}>{h.local}</div>{h.evento&&<div style={{ fontSize:12, color:"#a08040", fontStyle:"italic" }}>{h.evento}</div>}</div>)}</>}
+      {tab==="historico"&&<><h3 style={{ color:G, fontSize:14, marginTop:0 }}>HISTORICO DE PREGACAO</h3>{(sermon.historico||[]).length===0?<p style={{ color:"#7a5a30", fontStyle:"italic" }}>Nenhuma pregacao registrada.</p>:(sermon.historico||[]).map((h,i) => <div key={i} style={{ background:"rgba(80,50,120,0.1)", border:"1px solid #6050a0", borderRadius:8, padding:12, marginBottom:8 }}><div style={{ fontSize:12, color:G, marginBottom:3 }}>{h.data}{h.tempo?" - "+h.tempo:""}</div><div style={{ fontSize:14, color:"#f0e0b8" }}>{h.local}</div>{h.evento&&<div style={{ fontSize:12, color:"#a08040", fontStyle:"italic" }}>{h.evento}</div>}{h.observacao&&<div style={{ fontSize:12, color:"#c0a060", marginTop:4, fontStyle:"italic" }}>{h.observacao}</div>}</div>)}</>}
     </div>
   );
 }
@@ -883,8 +952,10 @@ export default function App() {
   const [saveMsg, setSaveMsg] = useState("");
   const [showHistorico, setShowHistorico] = useState(false);
   const [historicoTarget, setHistoricoTarget] = useState(null);
-  const [showApres, setShowApres] = useState(false);
-  const [apresSermon, setApresSermon] = useState(null);
+  const [showPregacao, setShowPregacao] = useState(false);
+  const [pregacaoSermon, setPregacaoSermon] = useState(null);
+  const [pregacaoTarget, setPregacaoTarget] = useState(null);
+  const [prefillTempo, setPrefillTempo] = useState("");
 
   useEffect(() => { loadSermons().then(setLibrary); }, []);
 
@@ -946,8 +1017,8 @@ export default function App() {
 
   return (
     <div style={{ minHeight:"100vh", background:"linear-gradient(135deg,#1a1207 0%,#2d1f0a 50%,#1a1207 100%)", fontFamily:"Georgia,serif", color:"#f5e6c8" }}>
-      {showHistorico&&getHistSerm()&&<HistModal sermon={getHistSerm()} onSave={handleHistSave} onClose={() => setShowHistorico(false)} />}
-      {showApres&&apresSermon&&<Apresentacao sermon={apresSermon} onClose={() => setShowApres(false)} />}
+      {showHistorico&&getHistSerm()&&<HistModal sermon={getHistSerm()} onSave={handleHistSave} onClose={() => { setShowHistorico(false); setPrefillTempo(""); }} initialTempo={prefillTempo} />}
+      {showPregacao&&pregacaoSermon&&<ModoPregacao sermon={pregacaoSermon} onClose={() => setShowPregacao(false)} onFinalizar={tempo => { setShowPregacao(false); setHistoricoTarget(pregacaoTarget); setPrefillTempo(tempo); setShowHistorico(true); }} />}
 
       <div style={{ background:"linear-gradient(180deg,#3d2a08,#2a1c05)", borderBottom:"2px solid " + G, padding:"16px 20px", textAlign:"center" }}>
         <div style={{ fontSize:22 }}>📖</div>
@@ -1007,7 +1078,7 @@ export default function App() {
             <div style={{ display:"flex", gap:6, justifyContent:"flex-end", marginBottom:10, flexWrap:"wrap" }}>
               <button onClick={() => saveToLibrary(sermon)} style={bS(false)}>Salvar</button>
               <button onClick={() => { setHistoricoTarget("current"); setShowHistorico(true); }} style={Object.assign({},bS(false),{borderColor:"#7050a0",color:"#b090e0"})}>Historico</button>
-              <button onClick={() => { setApresSermon(sermon); setShowApres(true); }} style={Object.assign({},bS(false),{borderColor:"#40a060",color:"#80e0a0"})}>Apresentar</button>
+              <button onClick={() => { setPregacaoSermon(sermon); setPregacaoTarget("current"); setShowPregacao(true); }} style={Object.assign({},bS(false),{borderColor:"#40a060",color:"#80e0a0"})}>Modo Pregacao</button>
               <button onClick={() => copiarTexto(sermon)} style={Object.assign({},bS(false),{borderColor:"#4080c0",color:"#80c0f0"})}>Copiar</button>
               <button onClick={() => exportPDF(sermon)} style={bS(false)}>PDF</button>
             </div>
@@ -1077,7 +1148,7 @@ export default function App() {
               <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
                 <button onClick={() => openEditor(s)} style={Object.assign({},bS(false),{fontSize:12,padding:"5px 11px"})}>Editar</button>
                 <button onClick={() => { setHistoricoTarget(s.id); setShowHistorico(true); }} style={Object.assign({},bS(false),{fontSize:12,padding:"5px 11px",borderColor:"#7050a0",color:"#b090e0"})}>Historico</button>
-                <button onClick={() => { setApresSermon(s); setShowApres(true); }} style={Object.assign({},bS(false),{fontSize:12,padding:"5px 11px",borderColor:"#40a060",color:"#80e0a0"})}>Apresentar</button>
+                <button onClick={() => { setPregacaoSermon(s); setPregacaoTarget(s.id); setShowPregacao(true); }} style={Object.assign({},bS(false),{fontSize:12,padding:"5px 11px",borderColor:"#40a060",color:"#80e0a0"})}>Modo Pregacao</button>
                 <button onClick={() => copiarTexto(s)} style={Object.assign({},bS(false),{fontSize:12,padding:"5px 11px",borderColor:"#4080c0",color:"#80c0f0"})}>Copiar</button>
                 <button onClick={() => exportPDF(s)} style={Object.assign({},bS(false),{fontSize:12,padding:"5px 11px"})}>PDF</button>
                 <button onClick={() => deleteSermon(s.id)} style={Object.assign({},bS(false),{fontSize:12,padding:"5px 11px",borderColor:"#8a3030",color:"#e08080"})}>Excluir</button>
@@ -1116,3 +1187,4 @@ export default function App() {
     </div>
   );
 }
+"Adiciona Modo Pregação, remove Apresentar"
