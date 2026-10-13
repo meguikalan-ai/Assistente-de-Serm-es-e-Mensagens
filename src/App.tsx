@@ -591,7 +591,7 @@ function PainelRefinador({ onSaveLibrary }) {
 
   const salvarNaBiblioteca = async () => {
     if (!result) return;
-    const s = { id:Date.now(), savedAt:new Date().toLocaleDateString("pt-BR"), titulo:result.titulo, pericope:result.pericope, tema:result.tema, versao_biblica:result.versao_biblica, tipo:result.tipo||tipo, introducao:result.introducao||"", conclusao:result.conclusao||"", apelo:result.apelo||"", pontos:(result.pontos||[]).map(pt => Object.assign({},pt,{ilustracao_biblica:null,ilustracao_cotidiano:null,fonte_ilustracao_cotidiano:null})), referencias:[{tipo:"Biblia",descricao:"BIBLIA SAGRADA. " + result.versao_biblica + ". [cidade]: [editora], [ano]."}], lexico:null, historico:[], estilo };
+    const s = { id:Date.now(), savedAt:new Date().toLocaleDateString("pt-BR"), titulo:result.titulo, pericope:result.pericope, tema:result.tema, versao_biblica:result.versao_biblica, tipo:result.tipo||tipo, introducao:result.introducao||"", conclusao:result.conclusao||"", apelo:result.apelo||"", pontos:(result.pontos||[]).map(pt => Object.assign({},pt,{ilustracao_biblica:null,ilustracao_cotidiano:null,fonte_ilustracao_cotidiano:null})), referencias:[{tipo:"Biblia",descricao:"BIBLIA SAGRADA. " + result.versao_biblica + ". [cidade]: [editora], [ano]."}], lexico:null, historico:[], estilo, analise:result.analise||"", melhorias:Array.isArray(result.melhorias)?result.melhorias:[] };
     try { await onSaveLibrary(s); setSalvoMsg("Sermao refinado salvo na Biblioteca!"); setTimeout(() => setSalvoMsg(""), 3000); } catch(e) { setSalvoMsg("Erro ao salvar: " + e.message); setTimeout(() => setSalvoMsg(""), 3000); }
   };
 
@@ -907,7 +907,7 @@ function PainelAvaliacao({ sermon, onAplicarMelhorias }) {
   </div>;
 }
 
-function SermonContent({ sermon, tab }) {
+function SermonContent({ sermon, tab, onAplicarMelhorias }) {
   const para = txt => (txt||"").split("\n").filter(Boolean).map((p,i) => <p key={i} style={{ lineHeight:1.85, fontSize:15, color:"#f0e0b8", marginBottom:11 }}>{p}</p>);
   return (
     <div style={{ background:"rgba(40,25,5,0.85)", border:"1px solid #5a3f10", borderRadius:12, padding:22 }}>
@@ -925,7 +925,7 @@ function SermonContent({ sermon, tab }) {
       {tab==="referencias"&&<><h3 style={{ color:G, fontSize:14, marginTop:0 }}>REFERENCIAS</h3>{(sermon.referencias||[]).map((r,i) => <div key={i} style={{ borderLeft:"3px solid #5a3f10", paddingLeft:12, marginBottom:10 }}><div style={{ fontSize:11, color:G, marginBottom:3, textTransform:"uppercase" }}>{r.tipo}</div><p style={{ margin:0, fontSize:14, color:"#e0d0a0" }}>{r.descricao}</p></div>)}</>}
       {tab==="lexico"&&sermon.lexico&&<><h3 style={{ color:G, fontSize:14, marginTop:0 }}>ANALISE LEXICA</h3>{(sermon.lexico.palavras||[]).map((p,i) => <div key={i} style={{ background:"rgba(60,40,10,0.5)", border:"1px solid #7a5a15", borderRadius:10, padding:16, marginBottom:12 }}><div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:8 }}><span style={{ fontSize:20, color:"#f0d080", fontStyle:"italic" }}>{p.original}</span><span style={{ fontSize:13, color:"#a08040" }}>({p.transliteracao})</span><span style={{ fontSize:12, background:p.idioma==="Grego"?"rgba(70,100,180,0.3)":"rgba(180,100,40,0.3)", border:"1px solid " + (p.idioma==="Grego"?"#6080c0":"#c07040"), padding:"2px 8px", borderRadius:10, color:p.idioma==="Grego"?"#a0c0ff":"#ffa060" }}>{p.idioma}</span><span style={{ fontSize:13, color:G, fontWeight:"bold" }}>{p.traducao}</span></div><p style={{ margin:0, fontSize:14, color:"#e0d0a0", lineHeight:1.8 }}>{p.significado}</p></div>)}</>}
       {tab==="dinamicas"&&<PainelDinamicas sermon={sermon} />}
-      {tab==="avaliacao"&&<PainelAvaliacao sermon={sermon} onAplicarMelhorias={s => { setSermon(s); setActiveTab("introducao"); setSaveMsg("Melhorias aplicadas com sucesso!"); setTimeout(()=>setSaveMsg(""),3000); }} />}
+      {tab==="avaliacao"&&<PainelAvaliacao sermon={sermon} onAplicarMelhorias={onAplicarMelhorias} />}
       {tab==="historico"&&<><h3 style={{ color:G, fontSize:14, marginTop:0 }}>HISTORICO DE PREGACAO</h3>{(sermon.historico||[]).length===0?<p style={{ color:"#7a5a30", fontStyle:"italic" }}>Nenhuma pregacao registrada.</p>:(sermon.historico||[]).map((h,i) => <div key={i} style={{ background:"rgba(80,50,120,0.1)", border:"1px solid #6050a0", borderRadius:8, padding:12, marginBottom:8 }}><div style={{ fontSize:12, color:G, marginBottom:3 }}>{h.data}{h.tempo?" - "+h.tempo:""}</div><div style={{ fontSize:14, color:"#f0e0b8" }}>{h.local}</div>{h.evento&&<div style={{ fontSize:12, color:"#a08040", fontStyle:"italic" }}>{h.evento}</div>}{h.observacao&&<div style={{ fontSize:12, color:"#c0a060", marginTop:4, fontStyle:"italic" }}>{h.observacao}</div>}</div>)}</>}
     </div>
   );
@@ -1095,7 +1095,7 @@ export default function App() {
               <button onClick={generateLexico} disabled={loadingLexico||!!sermon.lexico} style={Object.assign({},bS(!!sermon.lexico),{fontSize:12,padding:"6px 13px",cursor:loadingLexico?"wait":sermon.lexico?"default":"pointer"})}>{loadingLexico?"Analisando...":sermon.lexico?"Lexico Gerado":"Analise Lexica"}</button>
             </div>
             <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:10 }}>{TABS_SERMON.map(([id,lbl]) => <button key={id} onClick={() => setActiveTab(id)} style={bS(activeTab===id)}>{lbl}</button>)}</div>
-            <SermonContent sermon={sermon} tab={activeTab} />
+            <SermonContent sermon={sermon} tab={activeTab} onAplicarMelhorias={s => { setSermon(s); setActiveTab("introducao"); setSaveMsg("Melhorias aplicadas com sucesso!"); setTimeout(() => setSaveMsg(""), 3000); }} />
           </>}
         </>}
 
@@ -1166,6 +1166,11 @@ export default function App() {
               <button onClick={() => setMainView("library")} style={Object.assign({},bS(false),{borderColor:"#555",color:"#aaa"})}>Voltar</button>
             </div>
           </div>
+          {(editingSermon.analise||(editingSermon.melhorias&&editingSermon.melhorias.length>0))&&<div style={{ background:"rgba(40,25,5,0.85)", border:"1px solid " + G, borderRadius:10, padding:16, marginBottom:16 }}>
+            <h3 style={{ color:G, fontSize:14, marginTop:0 }}>ANALISE DO SERMAO ORIGINAL</h3>
+            {(editingSermon.analise||"").split("\n").filter(Boolean).map((p,i) => <p key={i} style={{ lineHeight:1.85, fontSize:14, color:"#f0e0b8", marginBottom:10 }}>{p}</p>)}
+            {editingSermon.melhorias&&editingSermon.melhorias.length>0&&<><h3 style={{ color:G, fontSize:14 }}>MELHORIAS REALIZADAS</h3>{editingSermon.melhorias.map((m,i) => <p key={i} style={{ margin:"0 0 6px", fontSize:13, color:"#c0e0c0" }}>- {m}</p>)}</>}
+          </div>}
           <Ef label="Pericope"><ET value={editingSermon.pericope} onChange={v => setEditingSermon(Object.assign({},editingSermon,{pericope:v}))}/></Ef>
           <Ef label="Titulo"><ET value={editingSermon.titulo} onChange={v => setEditingSermon(Object.assign({},editingSermon,{titulo:v}))} style={{ fontSize:16 }}/></Ef>
           <Ef label="Tema"><ET value={editingSermon.tema} onChange={v => setEditingSermon(Object.assign({},editingSermon,{tema:v}))} multiline/></Ef>
