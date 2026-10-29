@@ -10,6 +10,7 @@ const VERSOES = [
   { id:"KJA",  label:"KJA",  desc:"King James Atualizada em Portugues" },
   { id:"SBTB", label:"SBTB", desc:"Soc. Biblica Trinitariana do Brasil" },
   { id:"VLH",  label:"VLH",  desc:"Versao na Linguagem de Hoje (SBB)" },
+  { id:"AEC",  label:"AEC",  desc:"Almeida Edicao Contemporanea (Editora Vida)" }, 
 ];
 
 const ESTILOS = [
