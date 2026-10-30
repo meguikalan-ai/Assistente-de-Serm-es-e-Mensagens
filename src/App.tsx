@@ -83,6 +83,9 @@ const ESTILO_INST = {
 
 const DIRETRIZ = "TEOLOGIA BATISTA: Use Ceia do Senhor, Ordenancas, Igreja local, salvacao pela graca mediante a fe. Sem sacramentalismo. Autoridade das Escrituras, centralidade de Cristo, conversao pessoal, sacerdocio dos crentes.";
 
+const PONTE_INSTR = "PONTE PARA O DESENVOLVIMENTO: o ULTIMO paragrafo da introducao deve ser um paragrafo curto (1 a 3 frases), separado dos demais, que sirva de ponte para o primeiro ponto. Ele deve ligar o texto biblico a proposta do sermao, anunciar a quantidade exata de itens do campo pontos (tres, quatro, etc.) e nomea-los de acordo com o tema (verdades, aspectos, atitudes, passos, principios, etc.), terminando com a chamada para o primeiro ponto. Destaque em NEGRITO, com dois asteriscos de cada lado, somente a expressao que nomeia o primeiro ponto. Exemplo 1: Com base neste texto, vejamos três verdades que devem nortear o cristão a fazer escolhas acertadas. A **primeira verdade** é: Exemplo 2: Vejamos diante disso 4 aspectos que a igreja deve observar para se tornar relevante numa sociedade doente. O **primeiro aspecto** é: Use os exemplos apenas como modelo de estrutura: adapte sempre as palavras a proposta e ao tema deste sermao e varie a formulacao de um sermao para outro. Nao antecipe o conteudo dos pontos.";
+const TRANSICAO_INSTR = "TRANSICAO ENTRE OS PONTOS: no campo transicao de CADA ponto, EXCETO o ultimo (nele use null), escreva uma frase de transicao em paragrafo normal, SEPARADA do campo aplicacao (nao a coloque dentro de aplicacao), que encerre a ideia do ponto e remeta o ouvinte ao ponto seguinte, usando o mesmo termo anunciado na ponte da introducao (verdade, aspecto, atitude, passo, etc.) e o numeral correto (segunda, terceira, quarta...). Termine com a chamada para o proximo ponto. Destaque em NEGRITO, com dois asteriscos de cada lado, somente a expressao que nomeia o proximo ponto. Exemplo para o ponto 1: Quem reconhece quem Deus é já deu o primeiro passo, mas há mais a considerar. A **segunda verdade** é: Exemplo para o ponto 2: Preservar a identidade é essencial, mas não basta; precisamos olhar para além dos muros da igreja. O **terceiro aspecto** é: Use os exemplos apenas como modelo de estrutura: nunca copie o conteudo, adapte ao que foi realmente desenvolvido nos pontos e varie a formulacao. Os dois asteriscos do negrito sao a unica marcacao permitida e valem somente nesses destaques da ponte e das transicoes.";
+
 const CATS_TEMAS = ["Familia","Discipulado","Sofrimento","Oracao","Santidade","Evangelismo","Lideranca","Juventude","Missoes","Avivamento","Esperanca","Vida Crista","Temas Atuais"];
 const CAL_OCAS = ["Natal","Pascoa","Pentecostes","Semana da Familia","Conferencia Missionaria","Aniversario da Igreja","Culto de Gratidao","Batismo","Ceia do Senhor","Inicio de Ano","Encerramento de Ano","Retiro Espiritual","Congresso de Jovens","Semana de Oracao"];
 const TIPOS_ILUST = ["Biblica","Cotidiano","Historica","Pastoral","Evangelistica","Missionaria"];
@@ -164,7 +167,7 @@ function buildMainSys(versao, estilo, perfilIgreja, perfilPublico, duracao) {
   const instrPI = pi ? pi.instrucao : "";
   const instrPP = pp ? ("PERFIL DO PUBLICO: " + pp.label + ". Adapte linguagem, profundidade, exemplos, aplicacoes e intensidade do apelo para este publico.") : "";
   const instrDur = dur ? dur.instrucao : "";
-  return "Voce e assistente de homiletica evangelica batista. " + (ESTILO_INST[estilo]||ESTILO_INST.original) + " " + DIRETRIZ + " " + instrPI + " " + instrPP + " " + instrDur + " VERSAO BIBLICA: " + v.label + " " + v.desc + ". PROIBIDO citar pregadores ou teologos nominalmente. ILUSTRACOES: exatamente 2 no sermao todo (1 biblica + 1 cotidiano) em pontos diferentes. O sermao deve parecer preparado especificamente para esta congregacao. Responda SOMENTE com JSON valido sem markdown: {\"titulo\":\"...\",\"pericope\":\"...\",\"versao_biblica\":\"" + v.label + " - " + v.desc + "\",\"tema\":\"...\",\"introducao\":\"paragrafos por \\n\",\"pontos\":[{\"numero\":1,\"titulo\":\"...\",\"exposicao\":\"paragrafos por \\n\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\"},{\"numero\":2,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\"},{\"numero\":3,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\"}],\"conclusao\":\"paragrafos por \\n\",\"apelo\":\"paragrafos por \\n\",\"referencias\":[{\"tipo\":\"Biblia\",\"descricao\":\"BIBLIA SAGRADA. " + v.desc + ". [cidade]: [editora], [ano].\"}]}";
+  return "Voce e assistente de homiletica evangelica batista. " + (ESTILO_INST[estilo]||ESTILO_INST.original) + " " + DIRETRIZ + " " + instrPI + " " + instrPP + " " + instrDur + " VERSAO BIBLICA: " + v.label + " " + v.desc + ". PROIBIDO citar pregadores ou teologos nominalmente. ILUSTRACOES: exatamente 2 no sermao todo (1 biblica + 1 cotidiano) em pontos diferentes. O sermao deve parecer preparado especificamente para esta congregacao. " + PONTE_INSTR + " " + TRANSICAO_INSTR + " Responda SOMENTE com JSON valido sem markdown: {\"titulo\":\"...\",\"pericope\":\"...\",\"versao_biblica\":\"" + v.label + " - " + v.desc + "\",\"tema\":\"...\",\"introducao\":\"paragrafos por \\n\",\"pontos\":[{\"numero\":1,\"titulo\":\"...\",\"exposicao\":\"paragrafos por \\n\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":2,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":3,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":null}],\"conclusao\":\"paragrafos por \\n\",\"apelo\":\"paragrafos por \\n\",\"referencias\":[{\"tipo\":\"Biblia\",\"descricao\":\"BIBLIA SAGRADA. " + v.desc + ". [cidade]: [editora], [ano].\"}]}";
 }
 
 const ESBOCO_SYS = "Assistente de homiletica batista. Gere APENAS esboco rapido - esqueleto para o pregador desenvolver. " + DIRETRIZ + " Sem longos paragrafos. JSON valido sem markdown: {\"titulo\":\"...\",\"pericope\":\"...\",\"tema\":\"...\",\"objetivo\":\"1 frase\",\"introducao_gancho\":\"...\",\"pontos\":[{\"numero\":1,\"titulo\":\"...\",\"ideia_central\":\"1-2 frases\",\"aplicacao\":\"1 frase\"},{\"numero\":2,\"titulo\":\"...\",\"ideia_central\":\"...\",\"aplicacao\":\"...\"},{\"numero\":3,\"titulo\":\"...\",\"ideia_central\":\"...\",\"aplicacao\":\"...\"}],\"conclusao_ideia\":\"...\",\"apelo_ideia\":\"...\"}";
@@ -180,7 +183,7 @@ function buildRefSys(estilo, tipo, versao, intensidade, preservar) {
   const v = VERSOES.find(x => x.id === versao) || VERSOES[0];
   const eObj = ESTILOS_REF.find(e => e.id === estilo) || ESTILOS_REF[0];
   const instEst = estilo === "original" ? "Apenas melhore clareza, fluidez e organizacao. NAO altere a identidade do pregador." : ("Refine no estilo " + eObj.label + " com intensidade " + intensidade + ". " + eObj.desc);
-  return "Editor pastoral inteligente especializado em refinar sermons evangelicos batistas. " + instEst + " " + DIRETRIZ + " VERSAO BIBLICA: " + v.label + " " + v.desc + ". Atualize TODAS as citacoes para esta versao. Tipo de sermao: " + tipo + ". " + (preservar ? "PRESERVAR IDENTIDADE PASTORAL: mantenha vocabulario e voz do pregador original." : "") + " PROIBIDO: mudar doutrina, inventar interpretacoes, inserir cliches de IA. MELHORE: fluidez, argumentos, aplicacoes, transicoes, clareza, impacto. Texto final limpo sem asteriscos. JSON valido sem markdown: {\"titulo\":\"...\",\"pericope\":\"...\",\"versao_biblica\":\"" + v.label + " - " + v.desc + "\",\"tema\":\"...\",\"tipo\":\"" + tipo + "\",\"analise\":\"analise do original (2-3 paragrafos)\",\"melhorias\":[\"melhoria 1\",\"melhoria 2\"],\"introducao\":\"paragrafos por \\n\",\"pontos\":[{\"numero\":1,\"titulo\":\"...\",\"exposicao\":\"paragrafos por \\n\",\"aplicacao\":\"...\"},{\"numero\":2,\"titulo\":\"...\",\"exposicao\":\"...\",\"aplicacao\":\"...\"},{\"numero\":3,\"titulo\":\"...\",\"exposicao\":\"...\",\"aplicacao\":\"...\"}],\"conclusao\":\"paragrafos por \\n\",\"apelo\":\"paragrafos por \\n\"}";
+  return "Editor pastoral inteligente especializado em refinar sermons evangelicos batistas. " + instEst + " " + DIRETRIZ + " VERSAO BIBLICA: " + v.label + " " + v.desc + ". Atualize TODAS as citacoes para esta versao. Tipo de sermao: " + tipo + ". " + (preservar ? "PRESERVAR IDENTIDADE PASTORAL: mantenha vocabulario e voz do pregador original." : "") + " PROIBIDO: mudar doutrina, inventar interpretacoes, inserir cliches de IA. MELHORE: fluidez, argumentos, aplicacoes, transicoes, clareza, impacto. " + PONTE_INSTR + " " + TRANSICAO_INSTR + " Texto final limpo, sem asteriscos (exceto o negrito com dois asteriscos pedido na ponte e nas transicoes). JSON valido sem markdown: {\"titulo\":\"...\",\"pericope\":\"...\",\"versao_biblica\":\"" + v.label + " - " + v.desc + "\",\"tema\":\"...\",\"tipo\":\"" + tipo + "\",\"analise\":\"analise do original (2-3 paragrafos)\",\"melhorias\":[\"melhoria 1\",\"melhoria 2\"],\"introducao\":\"paragrafos por \\n\",\"pontos\":[{\"numero\":1,\"titulo\":\"...\",\"exposicao\":\"paragrafos por \\n\",\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":2,\"titulo\":\"...\",\"exposicao\":\"...\",\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":3,\"titulo\":\"...\",\"exposicao\":\"...\",\"aplicacao\":\"...\",\"transicao\":null}],\"conclusao\":\"paragrafos por \\n\",\"apelo\":\"paragrafos por \\n\"}";
 }
 
 function buildTemasSys(cat, isAtual) {
@@ -207,8 +210,13 @@ function Ef({ label, children }) {
   return <div style={{ marginBottom:12 }}><div style={{ fontSize:11, color:G, letterSpacing:1, textTransform:"uppercase", marginBottom:5 }}>{label}</div>{children}</div>;
 }
 function Para({ txt }) {
-  return (txt||"").split("\n").filter(Boolean).map((p,i) => <p key={i} style={{ lineHeight:1.85, fontSize:15, color:"#f0e0b8", marginBottom:11 }}>{p}</p>);
+  return (txt||"").split("\n").filter(Boolean).map((p,i) => <p key={i} style={{ lineHeight:1.85, fontSize:15, color:"#f0e0b8", marginBottom:11 }}>{renderBold(p)}</p>);
 }
+function renderBold(txt) {
+  return String(txt||"").split(/\*\*(.+?)\*\*/g).map((s,i) => i % 2 === 1 ? <strong key={i}>{s}</strong> : s);
+}
+const boldHtml = t => String(t||"").replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+const semNegrito = t => String(t||"").replace(/\*\*/g, "");
 function Sec({ t }) { return <h3 style={{ color:G, fontSize:14, marginTop:0, letterSpacing:1 }}>+ {t}</h3>; }
 function Card({ children }) { return <div style={{ background:"rgba(40,25,5,0.85)", border:"1px solid #5a3f10", borderRadius:12, padding:22 }}>{children}</div>; }
 const bS = active => ({ padding:"8px 14px", borderRadius:20, border:"1px solid " + (active?G:"#5a3f10"), background:active?G:"transparent", color:active?D:G, fontSize:13, cursor:"pointer", fontFamily:"Georgia,serif", fontWeight:active?"bold":"normal" });
@@ -219,8 +227,9 @@ function exportPDF(s) {
     const ib = pt.ilustracao_biblica ? `<div class="ilbox bib"><span class="il-label">Ilustracao Biblica</span>${pt.ilustracao_biblica}</div>` : "";
     const ic = pt.ilustracao_cotidiano ? `<div class="ilbox cot"><span class="il-label">Ilustracao do Cotidiano</span>${pt.ilustracao_cotidiano}</div>` : "";
     const apl = `<div class="aplic"><span class="il-label">Aplicacao Pastoral</span>${pt.aplicacao||""}</div>`;
+    const trans = pt.transicao ? `<p>${boldHtml(pt.transicao)}</p>` : "";
     const divider = idx < (s.pontos||[]).length - 1 ? `<div class="pt-divider"></div>` : "";
-    return `<div class="ponto"><div class="ponto-num">Ponto ${rn(pt.numero)}</div><h3 class="ponto-titulo">${pt.titulo}</h3>${(pt.exposicao||"").split("\n").filter(Boolean).map(p=>`<p>${p}</p>`).join("")}${ib}${ic}${apl}</div>${divider}`;
+    return `<div class="ponto"><div class="ponto-num">Ponto ${rn(pt.numero)}</div><h3 class="ponto-titulo">${pt.titulo}</h3>${(pt.exposicao||"").split("\n").filter(Boolean).map(p=>`<p>${p}</p>`).join("")}${ib}${ic}${apl}${trans}</div>${divider}`;
   }).join("");
 
   const refs = s.referencias && s.referencias.length ? `<div class="section"><div class="section-label">Referencias Bibliograficas</div>${s.referencias.map(r=>`<p class="ref-item">${r.descricao}</p>`).join("")}</div>` : "";
@@ -311,7 +320,7 @@ function exportPDF(s) {
   <!-- INTRODUCAO -->
   <div class="section">
     <div class="section-label">Introducao</div>
-    ${(s.introducao||"").split("\n").filter(Boolean).map(p=>`<p>${p}</p>`).join("")}
+    ${(s.introducao||"").split("\n").filter(Boolean).map(p=>`<p>${boldHtml(p)}</p>`).join("")}
   </div>
 
   <!-- DESENVOLVIMENTO -->
@@ -414,7 +423,7 @@ function ModoPregacao({ sermon, onClose, onFinalizar }) {
   const fgSub = temaClaro ? "#8a6a30" : "#a08040";
   const barraBg = temaClaro ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.6)";
   const barraBorda = temaClaro ? "#d8c090" : "#3a2a08";
-  const para = txt => (txt||"").split("\n").filter(Boolean).map((p,i) => <p key={i} style={{ lineHeight:1.85, fontSize:fs, marginBottom:12 }}>{p}</p>);
+  const para = txt => (txt||"").split("\n").filter(Boolean).map((p,i) => <p key={i} style={{ lineHeight:1.85, fontSize:fs, marginBottom:12 }}>{renderBold(p)}</p>);
   const TAMS = [16,19,22,26,30];
 
   return (
@@ -454,6 +463,7 @@ function ModoPregacao({ sermon, onClose, onFinalizar }) {
             <h3 style={{ fontSize:fs+3, color:fgTitulo, borderLeft:"4px solid " + G, paddingLeft:16, marginBottom:14 }}>{pt.titulo}</h3>
             {para(pt.exposicao)}
             {pt.aplicacao && <div style={{ background: temaClaro ? "rgba(40,120,40,0.1)" : "rgba(40,80,40,0.2)", border:"1px solid #3a6030", borderRadius:8, padding:14, fontSize:fs-3, color: temaClaro ? "#2a5a2a" : "#c0e0c0" }}>{pt.aplicacao}</div>}
+            {pt.transicao && <div style={{ marginTop:14 }}>{para(pt.transicao)}</div>}
           </div>)}
 
           <div ref={el => refs.current["conclusao"]=el} style={{ marginBottom:28 }}>
@@ -641,13 +651,13 @@ function PainelRefinador({ onSaveLibrary }) {
 
   const exportarTxt = () => {
     if (!result) return;
-    const pts = (result.pontos||[]).map(pt => "\nPONTO " + rn(pt.numero) + " - " + pt.titulo + "\n\n" + (pt.exposicao||"") + "\n\nAplicacao: " + (pt.aplicacao||"")).join("\n---\n");
-    const t = ["SERMAO REFINADO", result.titulo, result.pericope + " | " + result.versao_biblica, "Tema: " + result.tema, "\nINTRODUCAO\n", result.introducao||"", "\nDESENVOLVIMENTO\n", pts, "\nCONCLUSAO\n", result.conclusao||"", "\nAPELO\n", result.apelo||"", "\nPr. Fernando Veiga"].join("\n");
+    const pts = (result.pontos||[]).map(pt => "\nPONTO " + rn(pt.numero) + " - " + pt.titulo + "\n\n" + (pt.exposicao||"") + "\n\nAplicacao: " + (pt.aplicacao||"") + (pt.transicao ? "\n\n" + semNegrito(pt.transicao) : "")).join("\n---\n");
+    const t = ["SERMAO REFINADO", result.titulo, result.pericope + " | " + result.versao_biblica, "Tema: " + result.tema, "\nINTRODUCAO\n", semNegrito(result.introducao), "\nDESENVOLVIMENTO\n", pts, "\nCONCLUSAO\n", result.conclusao||"", "\nAPELO\n", result.apelo||"", "\nPr. Fernando Veiga"].join("\n");
     const a = Object.assign(document.createElement("a"),{href:URL.createObjectURL(new Blob([t],{type:"text/plain;charset=utf-8"})),download:"sermao-refinado.txt",style:"display:none"});
     (document.body||document.documentElement).appendChild(a); a.click(); setTimeout(()=>a.remove(),500);
   };
 
-  const para = txt => (txt||"").split("\n").filter(Boolean).map((p,i) => <p key={i} style={{ lineHeight:1.85, fontSize:15, color:"#f0e0b8", marginBottom:11 }}>{p}</p>);
+  const para = txt => (txt||"").split("\n").filter(Boolean).map((p,i) => <p key={i} style={{ lineHeight:1.85, fontSize:15, color:"#f0e0b8", marginBottom:11 }}>{renderBold(p)}</p>);
   const TABS = result ? [["analise","Analise"],["introducao","Introducao"],["pontos","Pontos"],["conclusao","Conclusao"],["apelo","Apelo"]] : [];
 
   return <div>
@@ -713,6 +723,7 @@ function PainelRefinador({ onSaveLibrary }) {
           <h3 style={{ color:"#f0d080", fontSize:15, marginTop:0, borderLeft:"3px solid " + G, paddingLeft:12 }}>Ponto {rn(pt.numero)} - {pt.titulo}</h3>
           {para(pt.exposicao)}
           <div style={{ background:"rgba(40,80,40,0.2)", border:"1px solid #3a6030", borderRadius:8, padding:12 }}><div style={{ fontSize:11, color:"#80c080", marginBottom:5 }}>APLICACAO</div><p style={{ margin:0, fontSize:14, color:"#c0e0c0" }}>{pt.aplicacao}</p></div>
+          {pt.transicao&&<div style={{ marginTop:14 }}>{para(pt.transicao)}</div>}
           {pt.numero<(result.pontos||[]).length&&<div style={{ height:1, background:"#3a2a08", margin:"20px 0" }} />}
         </div>)}
         {activeTab==="conclusao"&&<><h3 style={{ color:G, fontSize:14, marginTop:0 }}>CONCLUSAO</h3>{para(result.conclusao)}</>}
@@ -848,8 +859,8 @@ function PainelAvaliacao({ sermon, onAplicarMelhorias }) {
       ...(result.pontos_melhoria||[]),
       ...(result.sugestoes_praticas||[]),
     ].join("; ");
-    const sys = "Voce e um editor pastoral especializado em homiléetica batista. Voce recebera um sermao e uma lista de melhorias e sugestoes identificadas por uma avaliacao homiletica. Aplique TODAS as melhorias e sugestoes no sermao, preservando a estrutura, doutrina, tom e identidade pastoral original. " + DIRETRIZ + " Responda SOMENTE com JSON valido sem markdown, mantendo a mesma estrutura: {\"titulo\":\"...\",\"pericope\":\"...\",\"versao_biblica\":\"...\",\"tema\":\"...\",\"introducao\":\"paragrafos por \\n\",\"pontos\":[{\"numero\":1,\"titulo\":\"...\",\"exposicao\":\"paragrafos por \\n\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\"},{\"numero\":2,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\"},{\"numero\":3,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\"}],\"conclusao\":\"paragrafos por \\n\",\"apelo\":\"paragrafos por \\n\",\"referencias\":[]}";
-    const prompt = "Aplique as seguintes melhorias e sugestoes neste sermao:\n\nMELHORIAS A APLICAR:\n" + melhorias + "\n\nSERMAO ORIGINAL:\nTitulo: " + sermon.titulo + "\nPassagem: " + sermon.pericope + "\nTema: " + sermon.tema + "\nIntroducao:\n" + sermon.introducao + "\n\nPontos:\n" + (sermon.pontos||[]).map(p => "Ponto " + rn(p.numero) + " - " + p.titulo + ":\n" + p.exposicao + "\nAplicacao: " + p.aplicacao).join("\n\n") + "\n\nConclusao:\n" + sermon.conclusao + "\n\nApelo:\n" + sermon.apelo;
+    const sys = "Voce e um editor pastoral especializado em homiléetica batista. Voce recebera um sermao e uma lista de melhorias e sugestoes identificadas por uma avaliacao homiletica. Aplique TODAS as melhorias e sugestoes no sermao, preservando a estrutura, doutrina, tom e identidade pastoral original. Preserve tambem a ponte final da introducao e as frases de transicao entre os pontos (campo transicao), mantendo o negrito feito com dois asteriscos. " + DIRETRIZ + " Responda SOMENTE com JSON valido sem markdown, mantendo a mesma estrutura: {\"titulo\":\"...\",\"pericope\":\"...\",\"versao_biblica\":\"...\",\"tema\":\"...\",\"introducao\":\"paragrafos por \\n\",\"pontos\":[{\"numero\":1,\"titulo\":\"...\",\"exposicao\":\"paragrafos por \\n\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":2,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":3,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":null}],\"conclusao\":\"paragrafos por \\n\",\"apelo\":\"paragrafos por \\n\",\"referencias\":[]}";
+    const prompt = "Aplique as seguintes melhorias e sugestoes neste sermao:\n\nMELHORIAS A APLICAR:\n" + melhorias + "\n\nSERMAO ORIGINAL:\nTitulo: " + sermon.titulo + "\nPassagem: " + sermon.pericope + "\nTema: " + sermon.tema + "\nIntroducao:\n" + sermon.introducao + "\n\nPontos:\n" + (sermon.pontos||[]).map(p => "Ponto " + rn(p.numero) + " - " + p.titulo + ":\n" + p.exposicao + "\nAplicacao: " + p.aplicacao + (p.transicao ? "\nTransicao: " + p.transicao : "")).join("\n\n") + "\n\nConclusao:\n" + sermon.conclusao + "\n\nApelo:\n" + sermon.apelo;
     try {
       const melhorado = await callAPI(sys, prompt, 8000);
       melhorado.id = sermon.id;
@@ -909,7 +920,7 @@ function PainelAvaliacao({ sermon, onAplicarMelhorias }) {
 }
 
 function SermonContent({ sermon, tab, onAplicarMelhorias }) {
-  const para = txt => (txt||"").split("\n").filter(Boolean).map((p,i) => <p key={i} style={{ lineHeight:1.85, fontSize:15, color:"#f0e0b8", marginBottom:11 }}>{p}</p>);
+  const para = txt => (txt||"").split("\n").filter(Boolean).map((p,i) => <p key={i} style={{ lineHeight:1.85, fontSize:15, color:"#f0e0b8", marginBottom:11 }}>{renderBold(p)}</p>);
   return (
     <div style={{ background:"rgba(40,25,5,0.85)", border:"1px solid #5a3f10", borderRadius:12, padding:22 }}>
       {tab==="introducao"&&<><h3 style={{ color:G, fontSize:14, marginTop:0 }}>INTRODUCAO</h3>{para(sermon.introducao)}</>}
@@ -919,6 +930,7 @@ function SermonContent({ sermon, tab, onAplicarMelhorias }) {
         {pt.ilustracao_biblica&&<div style={{ background:"rgba(201,162,39,0.08)", border:"1px solid #7a5a15", borderRadius:8, padding:12, marginBottom:8 }}><div style={{ fontSize:11, color:G, letterSpacing:1, marginBottom:5 }}>ILUSTRACAO BIBLICA</div><p style={{ margin:0, lineHeight:1.8, fontSize:14, fontStyle:"italic", color:"#d4c090" }}>{pt.ilustracao_biblica}</p></div>}
         {pt.ilustracao_cotidiano&&<div style={{ background:"rgba(30,60,100,0.2)", border:"1px solid #4060a0", borderRadius:8, padding:12, marginBottom:8 }}><div style={{ fontSize:11, color:"#80a0e0", letterSpacing:1, marginBottom:5 }}>ILUSTRACAO DO COTIDIANO</div><p style={{ margin:0, lineHeight:1.8, fontSize:14, color:"#c0d0f0" }}>{pt.ilustracao_cotidiano}</p></div>}
         <div style={{ background:"rgba(40,80,40,0.2)", border:"1px solid #3a6030", borderRadius:8, padding:12 }}><div style={{ fontSize:11, color:"#80c080", letterSpacing:1, marginBottom:5 }}>APLICACAO</div><p style={{ margin:0, lineHeight:1.8, fontSize:14, color:"#c0e0c0" }}>{pt.aplicacao}</p></div>
+        {pt.transicao&&<div style={{ marginTop:14 }}>{para(pt.transicao)}</div>}
         {pt.numero<(sermon.pontos||[]).length&&<div style={{ height:1, background:"#3a2a08", margin:"20px 0" }} />}
       </div>)}
       {tab==="conclusao"&&<><h3 style={{ color:G, fontSize:14, marginTop:0 }}>CONCLUSAO</h3>{para(sermon.conclusao)}</>}
@@ -1182,6 +1194,7 @@ export default function App() {
             <Ef label="Titulo"><ET value={pt.titulo} onChange={v => { const p=[...editingSermon.pontos]; p[i]=Object.assign({},p[i],{titulo:v}); setEditingSermon(Object.assign({},editingSermon,{pontos:p})); }}/></Ef>
             <Ef label="Exposicao"><ET value={pt.exposicao} onChange={v => { const p=[...editingSermon.pontos]; p[i]=Object.assign({},p[i],{exposicao:v}); setEditingSermon(Object.assign({},editingSermon,{pontos:p})); }} multiline style={{ minHeight:110 }}/></Ef>
             <Ef label="Aplicacao"><ET value={pt.aplicacao} onChange={v => { const p=[...editingSermon.pontos]; p[i]=Object.assign({},p[i],{aplicacao:v}); setEditingSermon(Object.assign({},editingSermon,{pontos:p})); }} multiline/></Ef>
+            <Ef label="Transicao para o proximo ponto"><ET value={pt.transicao||""} onChange={v => { const p=[...editingSermon.pontos]; p[i]=Object.assign({},p[i],{transicao:v}); setEditingSermon(Object.assign({},editingSermon,{pontos:p})); }} multiline/></Ef>
           </div>)}
           <Ef label="Conclusao"><ET value={editingSermon.conclusao} onChange={v => setEditingSermon(Object.assign({},editingSermon,{conclusao:v}))} multiline style={{ minHeight:100 }}/></Ef>
           <Ef label="Apelo"><ET value={editingSermon.apelo} onChange={v => setEditingSermon(Object.assign({},editingSermon,{apelo:v}))} multiline style={{ minHeight:100 }}/></Ef>
