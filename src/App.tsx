@@ -13,6 +13,12 @@ const VERSOES = [
   { id:"AEC",  label:"AEC",  desc:"Almeida Edicao Contemporanea (Editora Vida)" }, 
 ];
 
+const HINARIOS = [
+  { id:"nenhum", label:"Nenhum",              desc:"Sem sugestao de hinos." },
+  { id:"CC",     label:"Cantor Cristao",      desc:"O Cantor Cristao (Hinario Batista)" },
+  { id:"HCC",    label:"Hinario para o Culto Cristao", desc:"Hinario para o Culto Cristao (JUERP)" },
+];
+
 const ESTILOS = [
   { id:"original", label:"Original",   desc:"Estilo natural da IA" },
   { id:"isaltino", label:"Pastoral",   desc:"Estilo do Pr. Isaltino Gomes Coelho Filho" },
@@ -159,15 +165,17 @@ async function callAPIChat(system, messages, tokens) {
   return (data.content||[]).map(i => i.text||"").join("");
 }
 
-function buildMainSys(versao, estilo, perfilIgreja, perfilPublico, duracao) {
+function buildMainSys(versao, estilo, perfilIgreja, perfilPublico, duracao, hinario) {
   const v = VERSOES.find(x => x.id === versao) || VERSOES[0];
+  const hn = HINARIOS.find(x => x.id === hinario);
+  const hinoInstr = (hn && hn.id !== "nenhum") ? (" HINARIO: " + hn.desc + ". No JSON, inclua tambem o campo hinos: lista de 3 a 4 hinos deste hinario que combinem com o tema do sermao, nesta forma: [{\"momento\":\"Abertura, antes da mensagem ou apos o apelo\",\"numero\":null,\"titulo\":\"...\"}]. Sugira SOMENTE hinos que voce tem certeza que existem neste hinario. Informe o numero SOMENTE se tiver certeza absoluta; se houver qualquer duvida use numero null. NUNCA reproduza a letra do hino, apenas numero e titulo.") : "";
   const pi = PERFIS_IGREJA.find(x => x.id === perfilIgreja);
   const pp = PERFIS_PUBLICO.find(x => x.id === perfilPublico);
   const dur = DURACOES.find(x => x.id === duracao);
   const instrPI = pi ? pi.instrucao : "";
   const instrPP = pp ? ("PERFIL DO PUBLICO: " + pp.label + ". Adapte linguagem, profundidade, exemplos, aplicacoes e intensidade do apelo para este publico.") : "";
   const instrDur = dur ? dur.instrucao : "";
-  return "Voce e assistente de homiletica evangelica batista. " + (ESTILO_INST[estilo]||ESTILO_INST.original) + " " + DIRETRIZ + " " + instrPI + " " + instrPP + " " + instrDur + " VERSAO BIBLICA: " + v.label + " " + v.desc + ". PROIBIDO citar pregadores ou teologos nominalmente. ILUSTRACOES: exatamente 2 no sermao todo (1 biblica + 1 cotidiano) em pontos diferentes. O sermao deve parecer preparado especificamente para esta congregacao. " + PONTE_INSTR + " " + TRANSICAO_INSTR + " Responda SOMENTE com JSON valido sem markdown: {\"titulo\":\"...\",\"pericope\":\"...\",\"versao_biblica\":\"" + v.label + " - " + v.desc + "\",\"tema\":\"...\",\"introducao\":\"paragrafos por \\n\",\"pontos\":[{\"numero\":1,\"titulo\":\"...\",\"exposicao\":\"paragrafos por \\n\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":2,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":3,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":null}],\"conclusao\":\"paragrafos por \\n\",\"apelo\":\"paragrafos por \\n\",\"referencias\":[{\"tipo\":\"Biblia\",\"descricao\":\"BIBLIA SAGRADA. " + v.desc + ". [cidade]: [editora], [ano].\"}]}";
+  return "Voce e assistente de homiletica evangelica batista. " + (ESTILO_INST[estilo]||ESTILO_INST.original) + " " + DIRETRIZ + " " + instrPI + " " + instrPP + " " + instrDur + " VERSAO BIBLICA: " + v.label + " " + v.desc + ". PROIBIDO citar pregadores ou teologos nominalmente. ILUSTRACOES: exatamente 2 no sermao todo (1 biblica + 1 cotidiano) em pontos diferentes. O sermao deve parecer preparado especificamente para esta congregacao. " + PONTE_INSTR + " " + TRANSICAO_INSTR + hinoInstr + " Responda SOMENTE com JSON valido sem markdown: {\"titulo\":\"...\",\"pericope\":\"...\",\"versao_biblica\":\"" + v.label + " - " + v.desc + "\",\"tema\":\"...\",\"introducao\":\"paragrafos por \\n\",\"pontos\":[{\"numero\":1,\"titulo\":\"...\",\"exposicao\":\"paragrafos por \\n\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":2,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":3,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":null}],\"conclusao\":\"paragrafos por \\n\",\"apelo\":\"paragrafos por \\n\",\"referencias\":[{\"tipo\":\"Biblia\",\"descricao\":\"BIBLIA SAGRADA. " + v.desc + ". [cidade]: [editora], [ano].\"}]}";
 }
 
 const ESBOCO_SYS = "Assistente de homiletica batista. Gere APENAS esboco rapido - esqueleto para o pregador desenvolver. " + DIRETRIZ + " Sem longos paragrafos. JSON valido sem markdown: {\"titulo\":\"...\",\"pericope\":\"...\",\"tema\":\"...\",\"objetivo\":\"1 frase\",\"introducao_gancho\":\"...\",\"pontos\":[{\"numero\":1,\"titulo\":\"...\",\"ideia_central\":\"1-2 frases\",\"aplicacao\":\"1 frase\"},{\"numero\":2,\"titulo\":\"...\",\"ideia_central\":\"...\",\"aplicacao\":\"...\"},{\"numero\":3,\"titulo\":\"...\",\"ideia_central\":\"...\",\"aplicacao\":\"...\"}],\"conclusao_ideia\":\"...\",\"apelo_ideia\":\"...\"}";
@@ -951,6 +959,7 @@ export default function App() {
   const [passage, setPassage] = useState("");
   const [selectedType, setSelectedType] = useState(null);
   const [selectedVersao, setSelectedVersao] = useState("ARC");
+  const [selectedHinario, setSelectedHinario] = useState("nenhum");
   const [selectedEstilo, setSelectedEstilo] = useState("original");
   const [selectedPerfil, setSelectedPerfil] = useState("tradicional");
   const [selectedPublico, setSelectedPublico] = useState("familias");
@@ -977,7 +986,7 @@ export default function App() {
     const typeObj = SERMON_TYPES.find(t => t.id===selectedType) || SERMON_TYPES[0];
     setLoading(true); setError(""); setSermon(null);
     try {
-      const parsed = await callAPI(buildMainSys(selectedVersao, selectedEstilo, selectedPerfil, selectedPublico, selectedDuracao), TIPO_PROMPTS[typeObj.id] + "\n\nTexto/Tema: " + passage);
+      const parsed = await callAPI(buildMainSys(selectedVersao, selectedEstilo, selectedPerfil, selectedPublico, selectedDuracao, selectedHinario), TIPO_PROMPTS[typeObj.id] + "\n\nTexto/Tema: " + passage);
       parsed.id = Date.now(); parsed.savedAt = null; parsed.tipo = typeObj.label; parsed.estilo = selectedEstilo;
       parsed.perfil_igreja = (PERFIS_IGREJA.find(x => x.id===selectedPerfil)||{}).label || "";
       parsed.perfil_publico = (PERFIS_PUBLICO.find(x => x.id===selectedPublico)||{}).label || "";
@@ -990,6 +999,8 @@ export default function App() {
       parsed.pericope = parsed.pericope || "";
       parsed.referencias = Array.isArray(parsed.referencias) ? parsed.referencias : [];
       parsed.versao_biblica = parsed.versao_biblica || selectedVersao;
+      parsed.hinario = (selectedHinario !== "nenhum") ? (HINARIOS.find(x => x.id===selectedHinario)||{}).label : "";
+      parsed.hinos = (selectedHinario !== "nenhum" && Array.isArray(parsed.hinos)) ? parsed.hinos : [];
       parsed.lexico = null; parsed.historico = [];
       setSermon(parsed); setActiveTab("introducao");
     } catch(e) { setError("Erro: " + e.message); }
@@ -1062,6 +1073,10 @@ export default function App() {
             <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:5 }}>{VERSOES.map(v => <button key={v.id} onClick={() => setSelectedVersao(v.id)} style={cS(selectedVersao===v.id)}>{v.id}</button>)}</div>
             <p style={{ fontSize:12, color:"#8a6a30", marginBottom:16, fontStyle:"italic" }}>{(VERSOES.find(v => v.id===selectedVersao)||{}).desc}</p>
 
+            <div style={{ fontSize:13, color:G, marginBottom:7, letterSpacing:1, textTransform:"uppercase" }}>Hinario</div>
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:5 }}>{HINARIOS.map(h => <button key={h.id} onClick={() => setSelectedHinario(h.id)} style={cS(selectedHinario===h.id)}>{h.label}</button>)}</div>
+            <p style={{ fontSize:12, color:"#8a6a30", marginBottom:16, fontStyle:"italic" }}>{(HINARIOS.find(h => h.id===selectedHinario)||{}).desc}</p>
+
             <div style={{ fontSize:13, color:G, marginBottom:8, letterSpacing:1, textTransform:"uppercase" }}>Duracao do Sermao</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:7, marginBottom:16 }}>
               {DURACOES.map(d => <button key={d.id} onClick={() => setSelectedDuracao(d.id)} style={{ padding:"10px 8px", borderRadius:8, border:"1px solid " + (selectedDuracao===d.id?G:"#5a3f10"), background:selectedDuracao===d.id?"rgba(201,162,39,0.15)":"transparent", color:selectedDuracao===d.id?G:"#c0a060", fontSize:13, cursor:"pointer", fontFamily:"Georgia,serif", textAlign:"center" }}><div style={{ fontWeight:selectedDuracao===d.id?"bold":"normal", marginBottom:3 }}>{d.label}</div><div style={{ fontSize:11, color:"#8a6a30", lineHeight:1.3 }}>{d.desc}</div></button>)}
@@ -1103,6 +1118,11 @@ export default function App() {
               <p style={{ margin:"0 0 3px", fontSize:11, color:"#7a6030" }}>{sermon.versao_biblica}</p>
               {sermon.perfil_igreja&&<p style={{ margin:0, fontSize:11, color:"#6a5020" }}>{sermon.perfil_igreja} - {sermon.perfil_publico}</p>}
             </div>
+            {sermon.hinos&&sermon.hinos.length>0&&<div style={{ background:"rgba(30,20,5,0.6)", border:"1px solid #4a3508", borderRadius:10, padding:12, marginBottom:12 }}>
+              <div style={{ fontSize:12, color:G, letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>Hinos sugeridos - {sermon.hinario}</div>
+              {sermon.hinos.map((h,i) => <p key={i} style={{ margin:"0 0 5px", fontSize:13, color:"#d4b060" }}>{h.numero ? h.numero + " - " : ""}{h.titulo}{h.momento ? " (" + h.momento + ")" : ""}</p>)}
+              <p style={{ margin:"6px 0 0", fontSize:11, color:"#7a6030", fontStyle:"italic" }}>Confira o numero no seu exemplar do hinario antes de usar.</p>
+            </div>}
             <div style={{ background:"rgba(30,20,5,0.6)", border:"1px solid #4a3508", borderRadius:10, padding:12, marginBottom:12 }}>
               <div style={{ fontSize:12, color:G, letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>Enriquecimento</div>
               <button onClick={generateLexico} disabled={loadingLexico||!!sermon.lexico} style={Object.assign({},bS(!!sermon.lexico),{fontSize:12,padding:"6px 13px",cursor:loadingLexico?"wait":sermon.lexico?"default":"pointer"})}>{loadingLexico?"Analisando...":sermon.lexico?"Lexico Gerado":"Analise Lexica"}</button>
