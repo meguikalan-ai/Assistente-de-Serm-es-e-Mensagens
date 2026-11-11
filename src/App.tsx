@@ -241,6 +241,7 @@ function exportPDF(s) {
   }).join("");
 
   const refs = s.referencias && s.referencias.length ? `<div class="section"><div class="section-label">Referencias Bibliograficas</div>${s.referencias.map(r=>`<p class="ref-item">${r.descricao}</p>`).join("")}</div>` : "";
+  const hinosHtml = s.hinos && s.hinos.length ? `<div class="section"><div class="section-label">Hinos Sugeridos${s.hinario?" &mdash; "+s.hinario:""}</div>${s.hinos.map(h=>`<p class="ref-item">${h.numero?h.numero+" - ":""}${h.titulo}${h.momento?" ("+h.momento+")":""}</p>`).join("")}</div>` : "";
   const hist = s.historico && s.historico.length ? `<div class="section"><div class="section-label">Historico de Pregacao</div>${s.historico.map(h=>`<div class="hist-item"><strong>${h.data}</strong> &mdash; ${h.local}${h.evento?" &bull; "+h.evento:""}</div>`).join("")}</div>` : "";
 
   const html = `<!DOCTYPE html>
@@ -349,6 +350,7 @@ function exportPDF(s) {
     ${(s.apelo||"").split("\n").filter(Boolean).map(p=>`<p>${p}</p>`).join("")}
   </div>
 
+  ${hinosHtml}
   ${refs}
   ${hist}
 
@@ -1034,7 +1036,7 @@ export default function App() {
     if (historicoTarget==="current") { setSermon(Object.assign({},sermon,{historico:nh})); }
     else { const u=library.map(x => x.id===historicoTarget?Object.assign({},x,{historico:nh}):x); setLibrary(u); await saveSermons(u); if (editingSermon && editingSermon.id===historicoTarget) setEditingSermon(Object.assign({},editingSermon,{historico:nh})); }
   };
-  const copiarTexto = s => { const t=[s.titulo, s.pericope + " | " + (s.versao_biblica||""), "Tema: " + s.tema, "", ...(s.pontos||[]).map(pt => "- " + pt.titulo), "", "Pr. Fernando Veiga"].join("\n"); navigator.clipboard.writeText(t).catch(() => {}); setSaveMsg("Copiado!"); setTimeout(() => setSaveMsg(""), 2000); };
+  const copiarTexto = s => { const t=[s.titulo, s.pericope + " | " + (s.versao_biblica||""), "Tema: " + s.tema, "", ...(s.pontos||[]).map(pt => "- " + pt.titulo), ...((s.hinos&&s.hinos.length)?["","Hinos sugeridos" + (s.hinario?" - "+s.hinario:"") + ":",...s.hinos.map(h => "- " + (h.numero?h.numero+" - ":"") + h.titulo + (h.momento?" ("+h.momento+")":""))]:[]), "", "Pr. Fernando Veiga"].join("\n"); navigator.clipboard.writeText(t).catch(() => {}); setSaveMsg("Copiado!"); setTimeout(() => setSaveMsg(""), 2000); };
 
   const TABS_SERMON = sermon ? [["introducao","Introducao"],["pontos","Pontos"],["conclusao","Conclusao"],["apelo","Apelo"],["referencias","Refs"],["dinamicas","Dinamicas"],["avaliacao","Avaliar"],...(sermon.lexico?[["lexico","Lexico"]]:[]),...(sermon.historico&&sermon.historico.length?[["historico","Historico"]]:[])] : [];
   const NAV = [["generate","Gerar"],["ferramentas","Ferramentas"],["estudo","Estudo"],["refinador","Refinar"],["library","Biblioteca" + (library.length>0?" ("+library.length+")":"")]];
