@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabaseClient";
+import { HINARIOS, PainelHinos, PainelHinosSermao } from "./Hinos";
 const G = "#c9a227", D = "#1a1207";
 
 const VERSOES = [
@@ -12,333 +13,6 @@ const VERSOES = [
   { id:"VLH",  label:"VLH",  desc:"Versao na Linguagem de Hoje (SBB)" },
   { id:"AEC",  label:"AEC",  desc:"Almeida Edicao Contemporanea (Editora Vida)" }, 
 ];
-
-const HINARIOS = [
-  { id:"nenhum", label:"Nenhum",              desc:"Sem sugestao de hinos." },
-  { id:"CC",     label:"Cantor Cristao",      desc:"O Cantor Cristao (Hinario Batista)" },
-  { id:"HCC",    label:"Hinario para o Culto Cristao", desc:"Hinario para o Culto Cristao (JUERP)" },
-];
-
-// Hinario para o Culto Cristao (JUERP) - numero e titulo conforme o indice do exemplar do pastor.
-// Para acrescentar hinos, basta incluir mais linhas no formato [numero, "Titulo"].
-const HCC_HINOS = [
-  [2, "Santo! Santo! Santo!"],
-  [4, "Santo, Santo, Pai Bondoso!"],
-  [8, "A Ti, ó Deus, Fiel e Bom Senhor"],
-  [9, "Louvamos-te, ó Deus"],
-  [10, "Louvemos ao Senhor"],
-  [13, "Deus Sábio, Invisível, Perfeito, Imortal"],
-  [14, "Ao Deus de Abraão Louvai"],
-  [17, "Fonte És Tu de Toda Bênção"],
-  [22, "Justo És, Senhor"],
-  [27, "Cantemos os Louvores"],
-  [29, "Deus É Amor"],
-  [30, "A Terra Semeamos"],
-  [32, "Ao Deus de Amor e de Imensa Bondade"],
-  [33, "Deus Cuidará de Ti"],
-  [34, "Deus dos Antigos"],
-  [35, "Deus Guia Seus Filhos em Paz"],
-  [37, "Deus Vos Guarde Pelo Seu Poder"],
-  [40, "As Tuas Mãos Dirigem Meu Destino"],
-  [42, "Guia, ó Deus, a Minha Vida"],
-  [47, "Altamente os Céus Proclamam"],
-  [48, "Eu Louvo o Poderoso Deus"],
-  [50, "Louvai ao Deus da Criação"],
-  [52, "Grandioso És Tu"],
-  [55, "Deus, por Amor, Criou"],
-  [56, "Saudai o Nome de Jesus (DIADEM)"],
-  [59, "Saudai o Nome de Jesus (CORONATION)"],
-  [60, "Aleluia! Aleluia! Gratos Hinos Entoai"],
-  [62, "Jesus, Sempre Te Amo"],
-  [63, "Maravilhoso, ó Jesus Amado"],
-  [64, "Glorioso És Tu, Senhor!"],
-  [66, "Cantarei ao Meu Salvador"],
-  [67, "Dai ao Cordeiro o Louvor"],
-  [69, "Desejo Te Adorar, Senhor"],
-  [72, "Mil Línguas Eu Quisera Ter"],
-  [73, "Louvamos, Louvamos, Senhor, e Adoramos"],
-  [75, "Bendize Tu, Meu Coração"],
-  [76, "Ao Eterno Salvador Jesus"],
-  [77, "Luz da Minha Alma"],
-  [80, "Bendito Seja Sempre o Cordeiro"],
-  [82, "Meu Deus, Eu Te Amo"],
-  [84, "Eu Te Amo, ó Meu Salvador"],
-  [89, "Em Silêncio Toda Carne"],
-  [94, "Falai Pelas Montanhas"],
-  [95, "De Belém, a Linda História"],
-  [96, "Cantam Anjos Harmonias"],
-  [97, "Anjos das Mansões de Glória"],
-  [100, "Proclamaram Anjos Mil o Primeiro Natal"],
-  [102, "Quem É o Menino?"],
-  [106, "Cantai Que o Salvador Chegou!"],
-  [109, "Repousa Tranquilo"],
-  [110, "Jesus Foi Criança Como Eu"],
-  [117, "Homem de Tristeza e Dor"],
-  [118, "São de Jesus as Histórias"],
-  [120, "Jesus Desceu, a Bíblia o Diz"],
-  [121, "Jesus o Lar do Céu Deixou"],
-  [123, "A Ti, Hosana e Glória"],
-  [127, "Ao Contemplar a Rude Cruz"],
-  [128, "Digno É o Cordeiro"],
-  [132, "Rude Cruz"],
-  [134, "Bem Junto à Cruz de Cristo"],
-  [135, "Cristo Já Ressuscitou"],
-  [136, "Adoro o Cristo Vivo"],
-  [137, "Porque Vivo Está"],
-  [140, "Da Sepultura Saiu"],
-  [142, "Findou-se a Luta de Jesus! (FINITA JAM SUNT PRAELIA)"],
-  [144, "Findou-se a Luta de Jesus! (VICTORY)"],
-  [145, "Hoje Nos Lembramos da Ressurreição"],
-  [146, "Sei Que Vive o Redentor"],
-  [148, "Jesus Virá"],
-  [150, "Será de Manhã?"],
-  [153, "Já Refulge a Glória Eterna"],
-  [155, "Afirmou o Senhor Que Virá Outra Vez"],
-  [157, "Quando Deus Fizer Chamada"],
-  [160, "Graça real, sem fim"],
-  [162, "Cristo, Amigo das Crianças"],
-  [165, "Em Jesus Amigo Temos"],
-  [166, "Senhor, É Admirável o Teu Divino Amor"],
-  [168, "Quanto Nos Ama Jesus!"],
-  [169, "Buscou-me com Ternura"],
-  [170, "Maravilhoso Amor"],
-  [171, "Amor, Que por Amor Desceste!"],
-  [173, "Cristo Tem Amor por Mim"],
-  [175, "Jesus, Teu Nome É Santo"],
-  [179, "Jesus É o Nome do Cristo de Deus"],
-  [180, "Jesus, Teu Nome Satisfaz"],
-  [181, "Jesus Me Guia"],
-  [182, "Dia a Dia"],
-  [183, "Cada Momento"],
-  [185, "Meu Bom Pastor"],
-  [188, "Glória ao Redentor!"],
-  [190, "Por Meus Pecados Padeceu"],
-  [191, "Cantarei a Linda História"],
-  [193, "Maravilhosa Graça!"],
-  [197, "Cristo Jesus com Poder Reinará"],
-  [198, "Cristo É Meu Rei"],
-  [199, "A Jesus, o Rei da Glória"],
-  [200, "Cristo É Tudo Para Mim"],
-  [202, "Ele É Meu e Teu Senhor"],
-  [203, "Cristo É Meu Senhor"],
-  [205, "Ele É o Meu Senhor"],
-  [206, "Santo Espírito Divino"],
-  [208, "Eu Não Posso Fugir do Teu Espírito"],
-  [210, "Eu os Guiarei ao Lar"],
-  [214, "É Divina, Sábia e Pura"],
-  [215, "Livro Santo"],
-  [216, "Eu Quero o Pão do Céu"],
-  [217, "É a Bíblia Nossa Luz"],
-  [219, "Deus Nos Deu Mensagem Santa"],
-  [222, "Deus Está Presente"],
-  [223, "Alegres, Adorai"],
-  [226, "Este É o Dia do Senhor"],
-  [227, "Louve, Meu Ser, ao Grandioso Senhor"],
-  [228, "A Deus Demos Glória"],
-  [229, "Louvem, com Alegre Som"],
-  [230, "Louvai com Todo Ardor"],
-  [233, "Adorem o Rei"],
-  [238, "A Deus, o Pai e Benfeitor"],
-  [239, "Santo És Tu, Senhor"],
-  [240, "Cristo, Nós Te Adoramos"],
-  [241, "Aceita, Agora, Senhor, Meu Deus"],
-  [246, "Santuários Nós Somos"],
-  [248, "Ao Findar o Labor Desta Vida"],
-  [251, "Salvação Jesus Me Dá"],
-  [252, "Amigo, Não Saia sem Cristo"],
-  [254, "Cristo, Só Cristo"],
-  [256, "Jesus Quer Entrar Hoje em Teu Coração"],
-  [259, "Escuto a Voz do Bom Jesus"],
-  [260, "Anda com Jesus!"],
-  [262, "Deixa o Salvador Te Ajudar"],
-  [269, "Finda-se Este Dia"],
-  [270, "Finda-se Este Culto"],
-  [271, "Findo o Culto"],
-  [274, "Com a Paz Vem Despedir-nos"],
-  [275, "Perdoa-me, Senhor"],
-  [277, "Estou Aqui, Jesus"],
-  [280, "Se Sofrimentos Eu Causei, Senhor"],
-  [283, "Eu Creio, Senhor, na Divina Promessa"],
-  [285, "Em Cristo Há Perfeito Perdão"],
-  [286, "Alvos Mais Que a Neve"],
-  [290, "Alegra o Triste Coração"],
-  [291, "Graça de Deus, Infinito Amor"],
-  [293, "Foi na Cruz"],
-  [296, "Eis a Nova"],
-  [297, "Feliz o Dia"],
-  [299, "As Novas do Evangelho"],
-  [301, "Remido"],
-  [303, "Maravilhoso Cristo"],
-  [304, "Jesus, Levaste a Minha Cruz"],
-  [305, "Rocha Eterna (OTTMAR)"],
-  [307, "Rocha Eterna (TOPLADY)"],
-  [308, "Livre em Cristo"],
-  [310, "“Quem Salva É Só Jesus!”"],
-  [311, "Deus Enviou Jesus"],
-  [314, "Preciosa a Graça de Jesus"],
-  [315, "És Minha Alegria"],
-  [318, "Que Alegria É Crer em Cristo"],
-  [319, "Agora Estou Contente"],
-  [321, "Cristo É Nossa Esperança"],
-  [323, "Eu Alegre Vou na Sua Luz"],
-  [326, "Jesus, em Ti Eu Tenho Paz"],
-  [327, "Se Teu Coração Estiver em Paz"],
-  [330, "Descansando no Poder de Deus"],
-  [331, "Como um Rio Calmo"],
-  [333, "Haja Paz na Terra"],
-  [334, "Meu Divino Protetor"],
-  [335, "De Teu Cuidado Terno"],
-  [336, "Meu Coração Descansa em Deus"],
-  [337, "Chuvas de Bênçãos"],
-  [339, "Almejo a Fé Que Forte É"],
-  [340, "Salvador Bendito"],
-  [342, "Se Queres Forças na Fraqueza (BEGINNINGS)"],
-  [343, "Se Queres Forças na Fraqueza (NEUMARK)"],
-  [344, "Firme nas Promessas (PROMISES)"],
-  [345, "Firme nas Promessas (TURLOCK)"],
-  [347, "Quero o Salvador Comigo"],
-  [348, "A Minha Fé e o Meu Amor"],
-  [349, "Meu Deus Proverá"],
-  [350, "A Jesus Cristo Contarei Tudo"],
-  [351, "Cristo, Esperança Viva"],
-  [352, "Cristo Te Estende Sua Forte Mão"],
-  [353, "Aos Pés de Deus"],
-  [355, "Aflito? Por Que Aflito?"],
-  [356, "Meu Senhor de Tudo Sabe"],
-  [360, "Espero em Ti, Senhor"],
-  [361, "Meu Senhor, Sou Teu"],
-  [362, "Desejo a Santidade"],
-  [363, "Sê Minha Vida, ó Deus de Poder"],
-  [364, "Mais de Cristo"],
-  [366, "Em Mim Vem Habitar"],
-  [367, "Com Alegria Venho, ó Deus"],
-  [369, "Cristo, Bom Mestre, Eis Meu Querer"],
-  [371, "Mais Puro Quero Ser"],
-  [372, "Quero Ser Como Cristo"],
-  [373, "Junto a Ti"],
-  [374, "Ao Orarmos, Senhor"],
-  [377, "Com Tua Mão Segura Bem a Minha"],
-  [378, "Bendita a Hora de Oração"],
-  [379, "Dirijo a Ti, Jesus, Minha Oração"],
-  [380, "Com a Minha Voz Clamo ao Senhor"],
-  [381, "Bendita É Sempre a Hora da Prece"],
-  [382, "Senhor, Se em Meu Caminho"],
-  [386, "Bem de Manhã"],
-  [388, "Santifica a Tua Igreja"],
-  [390, "Filhos da Luz"],
-  [392, "Aviva-nos, Senhor!"],
-  [393, "Em Comunhão com Deus"],
-  [394, "Contigo, ó Mestre, Quero Andar"],
-  [395, "Quero Estar ao Pé da Cruz"],
-  [396, "Busco o Senhor"],
-  [399, "Mais Perto Quero Estar"],
-  [400, "Quão Preciosas São as Horas"],
-  [401, "Logo de Manhã"],
-  [402, "Fica ao Meu Lado, ó Deus"],
-  [404, "Eu Andei a Sós com Cristo"],
-  [406, "Castelo Forte É Nosso Deus"],
-  [407, "Bem-aventurado É Aquele"],
-  [408, "Mestre, o Mar Se Revolta"],
-  [409, "Sei Que Jesus Vai por Onde Eu Andar"],
-  [412, "Deus É Nosso Pai Amado"],
-  [417, "Que Segurança! Sou de Jesus!"],
-  [419, "Graças Dou por Minha Vida"],
-  [420, "De Manhã, Deixando o Leito"],
-  [422, "Como Agradecer a Jesus?"],
-  [423, "Agradeço a Ti, Senhor"],
-  [424, "Saudamo-vos, Irmãos, em Cristo"],
-  [426, "Graças Te Rendemos"],
-  [429, "A Ti Seja Consagrada Minha Vida"],
-  [431, "Eu Resolvi Seguir-te"],
-  [436, "Queremos Te Conhecer Mais e Mais"],
-  [437, "Eu Canto a Ti Minha Oração"],
-  [438, "Quero Ser um Vaso de Bênção"],
-  [442, "Perto, Mais Perto"],
-  [444, "Conta as Bênçãos"],
-  [446, "Brilho Celeste"],
-  [447, "Mas Eu Sei em Quem Tenho Crido"],
-  [448, "Que Mudança Admirável"],
-  [451, "Como É Triste Andar em Trevas"],
-  [452, "Cristo Satisfaz Minha Alma"],
-  [454, "Eu Sou de Jesus"],
-  [456, "Precioso É Jesus Para Mim"],
-  [458, "Por Sua Graça e Compaixão"],
-  [459, "Quem Meu Coração Encanta"],
-  [460, "Cristo em Minha Vida"],
-  [462, "Cristo Me Amou e Me Livrou"],
-  [465, "Crer e Observar"],
-  [466, "Cedo ou Tarde"],
-  [467, "Por Onde Me Conduzir"],
-  [469, "Sempre Seguirei a Cristo"],
-  [471, "Cristo Chama"],
-  [473, "Segundo a Vontade de Deus"],
-  [476, "“Seguireis?”, Pergunta o Mestre"],
-  [480, "Seguir a Cristo Não É Sacrifício"],
-  [482, "Eu Quero Fazer o Que Queres, Senhor"],
-  [488, "Brilha no Meio do Teu Viver!"],
-  [490, "Deus Nos Chama a Ser Seu Povo"],
-  [492, "Mãos ao Trabalho"],
-  [496, "Barnabé, Homem de Deus"],
-  [497, "Cristo Amado"],
-  [500, "Se Deus É por Nós"],
-  [504, "Da Igreja o Fundamento"],
-  [505, "Igrejas Bem Fortes"],
-  [506, "Senhor, a Tua Igreja"],
-  [507, "Eu Amo com Fervor a Igreja"],
-  [508, "Senhor, Que É Nosso Templo?"],
-  [510, "As Águas do Jordão"],
-  [512, "Lembrando Teu Sepulcro"],
-  [515, "A Ceia do Senhor Jesus"],
-  [518, "Com Prazer Nos Congregamos"],
-  [519, "Reunidos Junto à Mesa"],
-  [524, "Fiel, Eterno e Santo Amor"],
-  [525, "Ah, Se Eu Tivesse Mil Vozes!"],
-  [526, "Cristo É a Única Esperança"],
-  [528, "Eis Multidões"],
-  [530, "Pudesse Contar Toda a Glória"],
-  [531, "Mas Nós Somos Luz"],
-  [536, "Levanta a Tua Voz e Anuncia"],
-  [538, "Fala e Não Te Cales"],
-  [540, "Desde Um ao Outro Pólo"],
-  [541, "As Boas Novas Anunciai"],
-  [543, "Eu Aceito o Desafio"],
-  [545, "Eu Vos Envio"],
-  [546, "Dá-me Tua Visão"],
-  [547, "Sabeis Falar de Tudo"],
-  [549, "Canto o Novo Canto da Terra"],
-  [552, "Que Estou Fazendo Se Sou Cristão?"],
-  [555, "A Cidade Irá Transformar-se"],
-  [557, "Senhor, a Ti Rendemos Louvor"],
-  [558, "Aquele Que Leva a Preciosa Semente"],
-  [562, "Jesus, Tu Reuniste Teus Amigos"],
-  [563, "Benditos Laços São"],
-  [566, "Jesus, Pastor Amado"],
-  [569, "Qual o Adorno Desta Vida?"],
-  [579, "Jerusalém Excelsa"],
-  [580, "Céu, Lindo Céu!"],
-  [581, "Há um Rio Cristalino"],
-  [583, "Lá no Céu Moraremos"],
-  [585, "Já Termina o Ano Velho"],
-  [586, "Por Tanto Amor Que o Pai Mostrou"],
-  [588, "Entoemos Hinos de Louvor"],
-  [589, "Este Templo Dedicamos"],
-  [590, "Em Cristo Seja o Lar Edificado"],
-  [592, "Lar Feliz Nós Vamos Ser"],
-  [595, "Que Feliz É o Lar"],
-  [596, "Se Houver Amor"],
-  [597, "Perfeito Amor"],
-  [598, "Abençoa, Deus de Amor"],
-  [600, "De Ti, ó Meu Brasil"],
-  [601, "Por Nossa Pátria Oramos"],
-  [606, "Que a Pátria Inteira Cante em Teu Louvor"],
-  [609, "Jesus Recebeu e Abençoou as Criancinhas"],
-  [610, "Senhor, em Tuas Mãos Paternas"],
-  [611, "Que Alegria Neste Dia!"],
-  [613, "Com Alegria Recordamos"]
-];
-const HCC_MAP = {};
-HCC_HINOS.forEach(h => { HCC_MAP[h[0]] = h[1]; });
-const HCC_TEXTO = HCC_HINOS.map(h => h[0] + "|" + h[1]).join("\n");
 
 const ESTILOS = [
   { id:"original", label:"Original",   desc:"Estilo natural da IA" },
@@ -486,17 +160,15 @@ async function callAPIChat(system, messages, tokens) {
   return (data.content||[]).map(i => i.text||"").join("");
 }
 
-function buildMainSys(versao, estilo, perfilIgreja, perfilPublico, duracao, hinario) {
+function buildMainSys(versao, estilo, perfilIgreja, perfilPublico, duracao) {
   const v = VERSOES.find(x => x.id === versao) || VERSOES[0];
-  const hn = HINARIOS.find(x => x.id === hinario);
-  const hinoInstr = (hn && hn.id === "HCC") ? (" HINARIO: Hinario para o Culto Cristao (JUERP). No JSON, inclua tambem o campo hinos: lista de 3 a 4 hinos que combinem com o tema do sermao, nesta forma: [{\"momento\":\"Abertura, antes da mensagem ou apos o apelo\",\"numero\":123}]. Escolha SOMENTE numeros que existam na lista oficial abaixo (formato numero|titulo), sem inventar numeros e sem reproduzir letras. Lista oficial:\n" + HCC_TEXTO + "\n") : (hn && hn.id !== "nenhum") ? (" HINARIO: " + hn.desc + ". No JSON, inclua tambem o campo hinos: lista de 3 a 4 hinos deste hinario que combinem com o tema do sermao, nesta forma: [{\"momento\":\"Abertura, antes da mensagem ou apos o apelo\",\"numero\":null,\"titulo\":\"...\"}]. Sugira SOMENTE hinos que voce tem certeza que existem neste hinario. Informe o numero SOMENTE se tiver certeza absoluta; se houver qualquer duvida use numero null. NUNCA reproduza a letra do hino, apenas numero e titulo.") : "";
   const pi = PERFIS_IGREJA.find(x => x.id === perfilIgreja);
   const pp = PERFIS_PUBLICO.find(x => x.id === perfilPublico);
   const dur = DURACOES.find(x => x.id === duracao);
   const instrPI = pi ? pi.instrucao : "";
   const instrPP = pp ? ("PERFIL DO PUBLICO: " + pp.label + ". Adapte linguagem, profundidade, exemplos, aplicacoes e intensidade do apelo para este publico.") : "";
   const instrDur = dur ? dur.instrucao : "";
-  return "Voce e assistente de homiletica evangelica batista. " + (ESTILO_INST[estilo]||ESTILO_INST.original) + " " + DIRETRIZ + " " + instrPI + " " + instrPP + " " + instrDur + " VERSAO BIBLICA: " + v.label + " " + v.desc + ". PROIBIDO citar pregadores ou teologos nominalmente. ILUSTRACOES: exatamente 2 no sermao todo (1 biblica + 1 cotidiano) em pontos diferentes. O sermao deve parecer preparado especificamente para esta congregacao. " + PONTE_INSTR + " " + TRANSICAO_INSTR + hinoInstr + " Responda SOMENTE com JSON valido sem markdown: {\"titulo\":\"...\",\"pericope\":\"...\",\"versao_biblica\":\"" + v.label + " - " + v.desc + "\",\"tema\":\"...\",\"introducao\":\"paragrafos por \\n\",\"pontos\":[{\"numero\":1,\"titulo\":\"...\",\"exposicao\":\"paragrafos por \\n\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":2,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":3,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":null}],\"conclusao\":\"paragrafos por \\n\",\"apelo\":\"paragrafos por \\n\",\"referencias\":[{\"tipo\":\"Biblia\",\"descricao\":\"BIBLIA SAGRADA. " + v.desc + ". [cidade]: [editora], [ano].\"}]}";
+  return "Voce e assistente de homiletica evangelica batista. " + (ESTILO_INST[estilo]||ESTILO_INST.original) + " " + DIRETRIZ + " " + instrPI + " " + instrPP + " " + instrDur + " VERSAO BIBLICA: " + v.label + " " + v.desc + ". PROIBIDO citar pregadores ou teologos nominalmente. ILUSTRACOES: exatamente 2 no sermao todo (1 biblica + 1 cotidiano) em pontos diferentes. O sermao deve parecer preparado especificamente para esta congregacao. " + PONTE_INSTR + " " + TRANSICAO_INSTR + " Responda SOMENTE com JSON valido sem markdown: {\"titulo\":\"...\",\"pericope\":\"...\",\"versao_biblica\":\"" + v.label + " - " + v.desc + "\",\"tema\":\"...\",\"introducao\":\"paragrafos por \\n\",\"pontos\":[{\"numero\":1,\"titulo\":\"...\",\"exposicao\":\"paragrafos por \\n\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":2,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":3,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":null}],\"conclusao\":\"paragrafos por \\n\",\"apelo\":\"paragrafos por \\n\",\"referencias\":[{\"tipo\":\"Biblia\",\"descricao\":\"BIBLIA SAGRADA. " + v.desc + ". [cidade]: [editora], [ano].\"}]}";
 }
 
 const ESBOCO_SYS = "Assistente de homiletica batista. Gere APENAS esboco rapido - esqueleto para o pregador desenvolver. " + DIRETRIZ + " Sem longos paragrafos. JSON valido sem markdown: {\"titulo\":\"...\",\"pericope\":\"...\",\"tema\":\"...\",\"objetivo\":\"1 frase\",\"introducao_gancho\":\"...\",\"pontos\":[{\"numero\":1,\"titulo\":\"...\",\"ideia_central\":\"1-2 frases\",\"aplicacao\":\"1 frase\"},{\"numero\":2,\"titulo\":\"...\",\"ideia_central\":\"...\",\"aplicacao\":\"...\"},{\"numero\":3,\"titulo\":\"...\",\"ideia_central\":\"...\",\"aplicacao\":\"...\"}],\"conclusao_ideia\":\"...\",\"apelo_ideia\":\"...\"}";
@@ -562,7 +234,6 @@ function exportPDF(s) {
   }).join("");
 
   const refs = s.referencias && s.referencias.length ? `<div class="section"><div class="section-label">Referencias Bibliograficas</div>${s.referencias.map(r=>`<p class="ref-item">${r.descricao}</p>`).join("")}</div>` : "";
-  const hinosHtml = s.hinos && s.hinos.length ? `<div class="section"><div class="section-label">Hinos Sugeridos${s.hinario?" &mdash; "+s.hinario:""}</div>${s.hinos.map(h=>`<p class="ref-item">${h.numero?h.numero+" - ":""}${h.titulo}${h.momento?" ("+h.momento+")":""}</p>`).join("")}</div>` : "";
   const hist = s.historico && s.historico.length ? `<div class="section"><div class="section-label">Historico de Pregacao</div>${s.historico.map(h=>`<div class="hist-item"><strong>${h.data}</strong> &mdash; ${h.local}${h.evento?" &bull; "+h.evento:""}</div>`).join("")}</div>` : "";
 
   const html = `<!DOCTYPE html>
@@ -671,7 +342,6 @@ function exportPDF(s) {
     ${(s.apelo||"").split("\n").filter(Boolean).map(p=>`<p>${p}</p>`).join("")}
   </div>
 
-  ${hinosHtml}
   ${refs}
   ${hist}
 
@@ -1250,7 +920,7 @@ function PainelAvaliacao({ sermon, onAplicarMelhorias }) {
   </div>;
 }
 
-function SermonContent({ sermon, tab, onAplicarMelhorias }) {
+function SermonContent({ sermon, tab, onAplicarMelhorias, hinarioId, onUpdate }) {
   const para = txt => (txt||"").split("\n").filter(Boolean).map((p,i) => <p key={i} style={{ lineHeight:1.85, fontSize:15, color:"#f0e0b8", marginBottom:11 }}>{renderBold(p)}</p>);
   return (
     <div style={{ background:"rgba(40,25,5,0.85)", border:"1px solid #5a3f10", borderRadius:12, padding:22 }}>
@@ -1269,6 +939,7 @@ function SermonContent({ sermon, tab, onAplicarMelhorias }) {
       {tab==="referencias"&&<><h3 style={{ color:G, fontSize:14, marginTop:0 }}>REFERENCIAS</h3>{(sermon.referencias||[]).map((r,i) => <div key={i} style={{ borderLeft:"3px solid #5a3f10", paddingLeft:12, marginBottom:10 }}><div style={{ fontSize:11, color:G, marginBottom:3, textTransform:"uppercase" }}>{r.tipo}</div><p style={{ margin:0, fontSize:14, color:"#e0d0a0" }}>{r.descricao}</p></div>)}</>}
       {tab==="lexico"&&sermon.lexico&&<><h3 style={{ color:G, fontSize:14, marginTop:0 }}>ANALISE LEXICA</h3>{(sermon.lexico.palavras||[]).map((p,i) => <div key={i} style={{ background:"rgba(60,40,10,0.5)", border:"1px solid #7a5a15", borderRadius:10, padding:16, marginBottom:12 }}><div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", marginBottom:8 }}><span style={{ fontSize:20, color:"#f0d080", fontStyle:"italic" }}>{p.original}</span><span style={{ fontSize:13, color:"#a08040" }}>({p.transliteracao})</span><span style={{ fontSize:12, background:p.idioma==="Grego"?"rgba(70,100,180,0.3)":"rgba(180,100,40,0.3)", border:"1px solid " + (p.idioma==="Grego"?"#6080c0":"#c07040"), padding:"2px 8px", borderRadius:10, color:p.idioma==="Grego"?"#a0c0ff":"#ffa060" }}>{p.idioma}</span><span style={{ fontSize:13, color:G, fontWeight:"bold" }}>{p.traducao}</span></div><p style={{ margin:0, fontSize:14, color:"#e0d0a0", lineHeight:1.8 }}>{p.significado}</p></div>)}</>}
       {tab==="dinamicas"&&<PainelDinamicas sermon={sermon} />}
+      {tab==="hinos"&&<PainelHinosSermao sermon={sermon} hinarioId={hinarioId} onUpdate={onUpdate} callAPI={callAPI} />}
       {tab==="avaliacao"&&<PainelAvaliacao sermon={sermon} onAplicarMelhorias={onAplicarMelhorias} />}
       {tab==="historico"&&<><h3 style={{ color:G, fontSize:14, marginTop:0 }}>HISTORICO DE PREGACAO</h3>{(sermon.historico||[]).length===0?<p style={{ color:"#7a5a30", fontStyle:"italic" }}>Nenhuma pregacao registrada.</p>:(sermon.historico||[]).map((h,i) => <div key={i} style={{ background:"rgba(80,50,120,0.1)", border:"1px solid #6050a0", borderRadius:8, padding:12, marginBottom:8 }}><div style={{ fontSize:12, color:G, marginBottom:3 }}>{h.data}{h.tempo?" - "+h.tempo:""}</div><div style={{ fontSize:14, color:"#f0e0b8" }}>{h.local}</div>{h.evento&&<div style={{ fontSize:12, color:"#a08040", fontStyle:"italic" }}>{h.evento}</div>}{h.observacao&&<div style={{ fontSize:12, color:"#c0a060", marginTop:4, fontStyle:"italic" }}>{h.observacao}</div>}</div>)}</>}
     </div>
@@ -1282,7 +953,7 @@ export default function App() {
   const [passage, setPassage] = useState("");
   const [selectedType, setSelectedType] = useState(null);
   const [selectedVersao, setSelectedVersao] = useState("ARC");
-  const [selectedHinario, setSelectedHinario] = useState("nenhum");
+  const [selectedHinario, setSelectedHinario] = useState("CC");
   const [selectedEstilo, setSelectedEstilo] = useState("original");
   const [selectedPerfil, setSelectedPerfil] = useState("tradicional");
   const [selectedPublico, setSelectedPublico] = useState("familias");
@@ -1309,7 +980,7 @@ export default function App() {
     const typeObj = SERMON_TYPES.find(t => t.id===selectedType) || SERMON_TYPES[0];
     setLoading(true); setError(""); setSermon(null);
     try {
-      const parsed = await callAPI(buildMainSys(selectedVersao, selectedEstilo, selectedPerfil, selectedPublico, selectedDuracao, selectedHinario), TIPO_PROMPTS[typeObj.id] + "\n\nTexto/Tema: " + passage);
+      const parsed = await callAPI(buildMainSys(selectedVersao, selectedEstilo, selectedPerfil, selectedPublico, selectedDuracao), TIPO_PROMPTS[typeObj.id] + "\n\nTexto/Tema: " + passage);
       parsed.id = Date.now(); parsed.savedAt = null; parsed.tipo = typeObj.label; parsed.estilo = selectedEstilo;
       parsed.perfil_igreja = (PERFIS_IGREJA.find(x => x.id===selectedPerfil)||{}).label || "";
       parsed.perfil_publico = (PERFIS_PUBLICO.find(x => x.id===selectedPublico)||{}).label || "";
@@ -1322,16 +993,6 @@ export default function App() {
       parsed.pericope = parsed.pericope || "";
       parsed.referencias = Array.isArray(parsed.referencias) ? parsed.referencias : [];
       parsed.versao_biblica = parsed.versao_biblica || selectedVersao;
-      parsed.hinario = (selectedHinario !== "nenhum") ? (HINARIOS.find(x => x.id===selectedHinario)||{}).label : "";
-      parsed.hinos = (selectedHinario !== "nenhum" && Array.isArray(parsed.hinos)) ? parsed.hinos : [];
-      if (selectedHinario === "HCC") {
-        const vistos = {};
-        parsed.hinos = parsed.hinos
-          .map(h => ({ numero: Number(h && h.numero), momento: (h && h.momento) || "" }))
-          .filter(h => HCC_MAP[h.numero] && !vistos[h.numero] && (vistos[h.numero] = true))
-          .map(h => ({ numero: h.numero, titulo: HCC_MAP[h.numero], momento: h.momento }));
-      }
-      parsed.hinosConferidos = selectedHinario === "HCC";
       parsed.lexico = null; parsed.historico = [];
       setSermon(parsed); setActiveTab("introducao");
     } catch(e) { setError("Erro: " + e.message); }
@@ -1365,9 +1026,9 @@ export default function App() {
     if (historicoTarget==="current") { setSermon(Object.assign({},sermon,{historico:nh})); }
     else { const u=library.map(x => x.id===historicoTarget?Object.assign({},x,{historico:nh}):x); setLibrary(u); await saveSermons(u); if (editingSermon && editingSermon.id===historicoTarget) setEditingSermon(Object.assign({},editingSermon,{historico:nh})); }
   };
-  const copiarTexto = s => { const t=[s.titulo, s.pericope + " | " + (s.versao_biblica||""), "Tema: " + s.tema, "", ...(s.pontos||[]).map(pt => "- " + pt.titulo), ...((s.hinos&&s.hinos.length)?["","Hinos sugeridos" + (s.hinario?" - "+s.hinario:"") + ":",...s.hinos.map(h => "- " + (h.numero?h.numero+" - ":"") + h.titulo + (h.momento?" ("+h.momento+")":""))]:[]), "", "Pr. Fernando Veiga"].join("\n"); navigator.clipboard.writeText(t).catch(() => {}); setSaveMsg("Copiado!"); setTimeout(() => setSaveMsg(""), 2000); };
+  const copiarTexto = s => { const t=[s.titulo, s.pericope + " | " + (s.versao_biblica||""), "Tema: " + s.tema, "", ...(s.pontos||[]).map(pt => "- " + pt.titulo), "", "Pr. Fernando Veiga"].join("\n"); navigator.clipboard.writeText(t).catch(() => {}); setSaveMsg("Copiado!"); setTimeout(() => setSaveMsg(""), 2000); };
 
-  const TABS_SERMON = sermon ? [["introducao","Introducao"],["pontos","Pontos"],["conclusao","Conclusao"],["apelo","Apelo"],["referencias","Refs"],["dinamicas","Dinamicas"],["avaliacao","Avaliar"],...(sermon.lexico?[["lexico","Lexico"]]:[]),...(sermon.historico&&sermon.historico.length?[["historico","Historico"]]:[])] : [];
+  const TABS_SERMON = sermon ? [["introducao","Introducao"],["pontos","Pontos"],["conclusao","Conclusao"],["apelo","Apelo"],["referencias","Refs"],["hinos","Hinos"],["dinamicas","Dinamicas"],["avaliacao","Avaliar"],...(sermon.lexico?[["lexico","Lexico"]]:[]),...(sermon.historico&&sermon.historico.length?[["historico","Historico"]]:[])] : [];
   const NAV = [["generate","Gerar"],["ferramentas","Ferramentas"],["estudo","Estudo"],["refinador","Refinar"],["library","Biblioteca" + (library.length>0?" ("+library.length+")":"")]];
 
   return (
@@ -1405,8 +1066,8 @@ export default function App() {
             <p style={{ fontSize:12, color:"#8a6a30", marginBottom:16, fontStyle:"italic" }}>{(VERSOES.find(v => v.id===selectedVersao)||{}).desc}</p>
 
             <div style={{ fontSize:13, color:G, marginBottom:7, letterSpacing:1, textTransform:"uppercase" }}>Hinario</div>
-            <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:5 }}>{HINARIOS.map(h => <button key={h.id} onClick={() => setSelectedHinario(h.id)} style={cS(selectedHinario===h.id)}>{h.label}</button>)}</div>
-            <p style={{ fontSize:12, color:"#8a6a30", marginBottom:16, fontStyle:"italic" }}>{(HINARIOS.find(h => h.id===selectedHinario)||{}).desc}</p>
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:5 }}>{[["CC","CC"],["HCC","HCC"],["TODOS","Ambos"]].map(([id,l]) => <button key={id} onClick={() => setSelectedHinario(id)} style={cS(selectedHinario===id)}>{l}</button>)}</div>
+            <p style={{ fontSize:12, color:"#8a6a30", marginBottom:16, fontStyle:"italic" }}>{selectedHinario==="TODOS"?"Cantor Cristao e Hinario para o Culto Cristao":(HINARIOS.find(h => h.id===selectedHinario)||{}).nome}</p>
 
             <div style={{ fontSize:13, color:G, marginBottom:8, letterSpacing:1, textTransform:"uppercase" }}>Duracao do Sermao</div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:7, marginBottom:16 }}>
@@ -1449,17 +1110,12 @@ export default function App() {
               <p style={{ margin:"0 0 3px", fontSize:11, color:"#7a6030" }}>{sermon.versao_biblica}</p>
               {sermon.perfil_igreja&&<p style={{ margin:0, fontSize:11, color:"#6a5020" }}>{sermon.perfil_igreja} - {sermon.perfil_publico}</p>}
             </div>
-            {sermon.hinos&&sermon.hinos.length>0&&<div style={{ background:"rgba(30,20,5,0.6)", border:"1px solid #4a3508", borderRadius:10, padding:12, marginBottom:12 }}>
-              <div style={{ fontSize:12, color:G, letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>Hinos sugeridos - {sermon.hinario}</div>
-              {sermon.hinos.map((h,i) => <p key={i} style={{ margin:"0 0 5px", fontSize:13, color:"#d4b060" }}>{h.numero ? h.numero + " - " : ""}{h.titulo}{h.momento ? " (" + h.momento + ")" : ""}</p>)}
-              <p style={{ margin:"6px 0 0", fontSize:11, color:"#7a6030", fontStyle:"italic" }}>{sermon.hinosConferidos ? "Numeracao conforme o indice do HCC (JUERP)." : "Confira o numero no seu exemplar do hinario antes de usar."}</p>
-            </div>}
             <div style={{ background:"rgba(30,20,5,0.6)", border:"1px solid #4a3508", borderRadius:10, padding:12, marginBottom:12 }}>
               <div style={{ fontSize:12, color:G, letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>Enriquecimento</div>
               <button onClick={generateLexico} disabled={loadingLexico||!!sermon.lexico} style={Object.assign({},bS(!!sermon.lexico),{fontSize:12,padding:"6px 13px",cursor:loadingLexico?"wait":sermon.lexico?"default":"pointer"})}>{loadingLexico?"Analisando...":sermon.lexico?"Lexico Gerado":"Analise Lexica"}</button>
             </div>
             <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:10 }}>{TABS_SERMON.map(([id,lbl]) => <button key={id} onClick={() => setActiveTab(id)} style={bS(activeTab===id)}>{lbl}</button>)}</div>
-            <SermonContent sermon={sermon} tab={activeTab} onAplicarMelhorias={s => { setSermon(s); setActiveTab("introducao"); setSaveMsg("Melhorias aplicadas com sucesso!"); setTimeout(() => setSaveMsg(""), 3000); }} />
+            <SermonContent sermon={sermon} tab={activeTab} hinarioId={selectedHinario} onUpdate={s => setSermon(s)} onAplicarMelhorias={s => { setSermon(s); setActiveTab("introducao"); setSaveMsg("Melhorias aplicadas com sucesso!"); setTimeout(() => setSaveMsg(""), 3000); }} />
           </>}
         </>}
 
@@ -1487,11 +1143,13 @@ export default function App() {
             <button onClick={() => setEstudoView("chat")}       style={bS(estudoView==="chat")}>Chat com o Texto</button>
             <button onClick={() => setEstudoView("comparacao")} style={bS(estudoView==="comparacao")}>Comparacao de Versoes</button>
             <button onClick={() => setEstudoView("mapa")}       style={bS(estudoView==="mapa")}>Mapa do Contexto</button>
+            <button onClick={() => setEstudoView("hinos")}      style={bS(estudoView==="hinos")}>Hinos</button>
           </div>
           <Card>
             {estudoView==="chat"       && <PainelChat />}
             {estudoView==="comparacao" && <PainelComparacao />}
             {estudoView==="mapa"       && <PainelMapa />}
+            {estudoView==="hinos"      && <PainelHinos />}
           </Card>
         </>}
 
