@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { supabase } from "./supabaseClient";
+import { lerPdfCC, sqlDasLetras, emLotes } from "./LetrasCC";
 
 const G = "#c9a227", D = "#1a1207";
 const bS = (active: any) => ({ padding:"8px 14px", borderRadius:20, border:"1px solid " + (active?G:"#5a3f10"), background:active?G:"transparent", color:active?D:G, fontSize:13, cursor:"pointer", fontFamily:"Georgia,serif", fontWeight:active?"bold":"normal" } as any);
@@ -108,6 +109,70 @@ function HinoLeitura({ h }: any) {
   );
 }
 
+
+// Importador de letras: le o PDF do Cantor Cristao no seu navegador e gera o SQL para colar no Supabase
+function ImportadorLetras() {
+  const [hinos, setHinos] = useState<any[]>([]);
+  const [msg, setMsg] = useState("");
+  const [erro, setErro] = useState("");
+  const [lendo, setLendo] = useState(false);
+  const [copiado, setCopiado] = useState(-1);
+  const [texto, setTexto] = useState("");
+
+  const escolher = async (e: any) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    setLendo(true); setErro(""); setHinos([]); setCopiado(-1); setTexto("");
+    try {
+      const r = await lerPdfCC(f, (p: number, t: number) => setMsg("Lendo pagina " + p + " de " + t + "..."));
+      setHinos(r); setMsg("");
+      if (r.length === 0) setErro("Nao encontrei hinos neste PDF. Ele precisa ser o Cantor Cristao da Cultura Evangelica.");
+    } catch (x: any) {
+      setErro("Erro ao ler o PDF: " + (x && x.message ? x.message : "tente novamente")); setMsg("");
+    }
+    setLendo(false);
+  };
+
+  const copiar = async (i: number, lote: any[]) => {
+    const sql = sqlDasLetras("CC", lote);
+    try { await navigator.clipboard.writeText(sql); setTexto(""); }
+    catch (x) { setTexto(sql); }
+    setCopiado(i);
+  };
+
+  const lotes = emLotes(hinos, 100);
+  const comRefrao = hinos.filter((h: any) => h.refrao).length;
+
+  return (
+    <details style={{ marginTop:28, borderTop:"1px solid #5a3f10", paddingTop:14 }}>
+      <summary style={{ cursor:"pointer", color:G, fontSize:13, letterSpacing:1, textTransform:"uppercase" }}>Importar letras do Cantor Cristao (PDF)</summary>
+      <p style={{ fontSize:12, color:"#8a6a30", lineHeight:1.7 }}>Escolha o PDF do Cantor Cristao (versao Cultura Evangelica). A leitura acontece no seu navegador. Depois, copie cada parte e execute no SQL Editor do Supabase.</p>
+      <input type="file" accept="application/pdf" onChange={escolher} disabled={lendo} style={{ color:"#c0a060", fontSize:13, marginBottom:10 }} />
+      {msg && <p style={{ color:G, fontSize:13 }}>{msg}</p>}
+      {erro && <p style={{ color:"#e07070", fontSize:13 }}>{erro}</p>}
+      {hinos.length > 0 && (
+        <div>
+          <p style={{ fontSize:13, color:"#c0a060" }}>Li {hinos.length} hinos ({comRefrao} com refrao). Copie cada parte, cole no SQL Editor do Supabase, clique em Run e passe para a proxima.</p>
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+            {lotes.map((lt: any[], i: number) => (
+              <button key={i} onClick={() => copiar(i, lt)} style={cS(copiado === i)}>
+                {copiado === i ? "Copiado! " : ""}Parte {i + 1} (hinos {lt[0].numero} a {lt[lt.length - 1].numero})
+              </button>
+            ))}
+          </div>
+          {copiado >= 0 && !texto && <p style={{ fontSize:12, color:"#8a6a30", fontStyle:"italic" }}>Parte {copiado + 1} copiada. Cole no SQL Editor (Ctrl+V) e clique em Run.</p>}
+          {texto && (
+            <div>
+              <p style={{ fontSize:12, color:"#e0a050" }}>O navegador nao deixou copiar sozinho. Clique na caixa, aperte Ctrl+A e Ctrl+C, e cole no Supabase.</p>
+              <textarea readOnly value={texto} onFocus={(e: any) => e.target.select()} style={{ width:"100%", height:120, background:D, color:"#c0a060", border:"1px solid #5a3f10", fontSize:11 }} />
+            </div>
+          )}
+        </div>
+      )}
+    </details>
+  );
+}
+
 // Tela de consulta: Estudo > Hinos
 export function PainelHinos() {
   const [hin, setHin] = useState("TODOS");
@@ -151,6 +216,7 @@ export function PainelHinos() {
           {aberto === h.id && <HinoLeitura h={h} />}
         </div>
       ))}
+      <ImportadorLetras />
     </div>
   );
 }
