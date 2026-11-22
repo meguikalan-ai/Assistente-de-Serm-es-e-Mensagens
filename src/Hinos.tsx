@@ -19,6 +19,26 @@ function estrofesDe(h: any): string[] {
   return Array.isArray(e) ? e : [];
 }
 
+// Ignora acentos e maiusculas: "graca" acha "Graça", "ceia" acha "Ceia"
+const norm = (s: string) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+let catalogoCache: any[] | null = null;
+async function catalogoTitulos(): Promise<any[]> {
+  if (catalogoCache) return catalogoCache;
+  let todos: any[] = [];
+  let ini = 0;
+  while (true) {
+    const { data, error } = await supabase.from("hinos").select("id,hinario_id,numero,titulo").order("hinario_id").order("numero").range(ini, ini + 999);
+    if (error) throw error;
+    const lote = data || [];
+    todos = todos.concat(lote);
+    if (lote.length < 1000) break;
+    ini += 1000;
+  }
+  catalogoCache = todos.map((h: any) => Object.assign({}, h, { _n: norm(h.titulo) }));
+  return catalogoCache;
+}
+
 async function buscarHinos(hinarioId: string, termo: string) {
   const t = (termo || "").trim();
   const base = () => {
@@ -36,17 +56,28 @@ async function buscarHinos(hinarioId: string, termo: string) {
     if (error) throw error;
     return data || [];
   }
-  const [a, b] = await Promise.all([
+  const palavras = norm(t).split(/\s+/).filter(Boolean);
+  const [cat, a] = await Promise.all([
+    catalogoTitulos().catch(() => [] as any[]),
     base().textSearch("busca", t, { config:"portuguese", type:"websearch" }),
-    base().ilike("titulo", "%" + t + "%"),
   ]);
-  if (a.error && b.error) throw a.error;
+  const ids = cat
+    .filter((h: any) => (hinarioId === "TODOS" || h.hinario_id === hinarioId) && palavras.every((p: string) => h._n.indexOf(p) >= 0))
+    .slice(0, 50)
+    .map((h: any) => h.id);
+  let porTitulo: any[] = [];
+  if (ids.length) {
+    const r = await supabase.from("hinos").select(COLS).in("id", ids).order("hinario_id").order("numero");
+    if (r.error) throw r.error;
+    porTitulo = r.data || [];
+  }
   const vistos: any = {};
   const out: any[] = [];
-  [...(b.data || []), ...(a.data || [])].forEach((h: any) => {
+  [...porTitulo, ...(a.data || [])].forEach((h: any) => {
     if (!vistos[h.id]) { vistos[h.id] = 1; out.push(h); }
   });
-  return out;
+  if (out.length === 0 && a.error) throw a.error;
+  return out.slice(0, 50);
 }
 
 async function buscarUmHino(hinarioId: string, numero: number) {
