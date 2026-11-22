@@ -125,17 +125,23 @@ async function saveSermons(l) {
   } catch (e) { console.error("Erro ao salvar biblioteca:", e); }
 }
 
+function isBusy(err) {
+  if (!err) return false;
+  const t = String(err.type || "") + " " + String(err.message || "") + " " + String(err.status || "") + " " + String(err.code || "");
+  return /overload|high demand|unavailable|try again later|503|529/i.test(t);
+}
+
 async function callAPI(system, content, tokens) {
   tokens = tokens || 8000;
   let data, att = 0;
-  while (att < 4) {
+  while (att < 6) {
     const r = await fetch("/api/anthropic", {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:tokens, system, messages:[{role:"user",content}] })
     });
     data = await r.json();
-    if (!data.error || data.error.type !== "overloaded_error") break;
-    att++; if (att < 4) await new Promise(r => setTimeout(r, 3000*att));
+    if (!isBusy(data.error)) break;
+    att++; if (att < 6) await new Promise(r => setTimeout(r, 4000*att));
   }
   if (data.error) throw new Error(data.error.message || "Erro da API");
   const raw = (data.content||[]).map(i => i.text||"").join("");
@@ -147,14 +153,14 @@ async function callAPI(system, content, tokens) {
 async function callAPIChat(system, messages, tokens) {
   tokens = tokens || 4000;
   let data, att = 0;
-  while (att < 4) {
+  while (att < 6) {
     const r = await fetch("/api/anthropic", {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:tokens, system, messages })
     });
     data = await r.json();
-    if (!data.error || data.error.type !== "overloaded_error") break;
-    att++; if (att < 4) await new Promise(r => setTimeout(r, 3000*att));
+    if (!isBusy(data.error)) break;
+    att++; if (att < 6) await new Promise(r => setTimeout(r, 4000*att));
   }
   if (data.error) throw new Error(data.error.message || "Erro da API");
   return (data.content||[]).map(i => i.text||"").join("");
@@ -635,11 +641,11 @@ function PainelRefinador({ onSaveLibrary }) {
         msgs = [{role:"user",content:"Leia e refine este sermao:\n\n" + texto.trim().slice(0,12000) + "\n\nTipo: " + tipo + ". Estilo: " + estilo + ". Intensidade: " + intensidade + ". Preservar identidade: " + (preservar?"sim":"nao") + "."}];
       }
       let data, att=0;
-      while (att<4) {
+      while (att<6) {
         const r = await fetch("/api/anthropic",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:8000,system:sys,messages:msgs})});
         data = await r.json();
-        if (!data.error||data.error.type!=="overloaded_error") break;
-        att++; if(att<4) await new Promise(r=>setTimeout(r,3000*att));
+        if (!isBusy(data.error)) break;
+        att++; if(att<6) await new Promise(r=>setTimeout(r,4000*att));
       }
       if (data.error) throw new Error(data.error.message||"Erro interno da API.");
       const raw = (data.content||[]).map(i=>i.text||"").join("");
