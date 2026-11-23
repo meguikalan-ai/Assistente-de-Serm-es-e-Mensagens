@@ -168,6 +168,52 @@ async function callAPIChat(system, messages, tokens) {
 
 const LEXICO_PLURAIS = "LEXICO DE SUBSTANTIVOS PLURAIS PARA A PROPOSICAO E OS PONTOS: escolha o substantivo plural mais fiel a natureza do texto biblico e a intencao de pregacao, evitando repeticoes genericas como apenas aspectos ou pontos. Categorias: 1) EXPOSICAO DOUTRINARIA (o que o texto ensina como absoluto): Verdades, Princípios, Fundamentos, Pilares, Doutrinas, Convicções, Atributos, Características, Marcas. 2) ANALISE TEXTUAL E DESCRITIVA (o que o texto revela ou desdobra): Aspectos, Facetas, Dimensões, Realidades, Elementos, Componentes, Evidências, Sinais, Contrastes. 3) CAUSA, EFEITO E PROPOSITO (a logica espiritual do texto): Fatores, Causas, Razões, Consequências, Resultados, Frutos, Benefícios, Bênçãos, Privilégios, Propósitos, Finalidades. 4) EXORTACAO E APLICACAO PRATICA (a resposta exigida pelo texto): Imperativos, Mandamentos, Responsabilidades, Deveres, Passos, Etapas, Movimentos, Atitudes, Posturas, Práticas, Disciplinas. 5) ALERTAS, CONFLITOS E CONSOLO PASTORAL (advertencia ou cuidado da alma): Perigos, Armadilhas, Obstáculos, Sintomas, Recursos, Provisões, Remédios, Consolos, Esperanças, Promessas. REGRAS DE USO: escolha apenas UM termo-chave dominante por sermao ou esboco, para manter a unidade logica da proposicao. Alinhe o termo ao genero literario e aos verbos principais do texto (textos com imperativos pedem mandamentos, atitudes ou passos; textos indicativos sobre Deus pedem verdades, atributos ou provisoes). Escreva a PROPOSICAO do sermao como uma frase completa que contenha esse termo-chave no plural e anuncie o que os pontos principais vao desdobrar; ela vem ANTES dos pontos, no campo tema. Os titulos dos pontos devem ser coerentes com o termo-chave: cada ponto e um exemplar do mesmo plural.";
 
+// ==== REVISAO ORTOGRAFICA ====
+const ORTOGRAFIA_INSTR = "ORTOGRAFIA: escreva em portugues do Brasil correto, com todos os acentos e cedilhas. Antes de responder, releia o titulo, a proposicao, os titulos dos pontos e o texto todo, conferindo palavra por palavra: nenhuma palavra pode sair com letra faltando, trocada ou sem acento.";
+const REVISAO_SYS = "Revisor de portugues brasileiro. Encontre APENAS erros evidentes de grafia, digitacao e acentuacao: palavras inexistentes, letras faltando ou trocadas, acento ausente ou errado. NAO altere estilo, vocabulario, doutrina, nomes proprios, termos biblicos nem citacoes de versiculos. Responda SOMENTE com JSON valido sem markdown: {\"correcoes\":[{\"errado\":\"trecho exato, de 1 a 3 palavras, como aparece no texto\",\"correto\":\"o mesmo trecho corrigido\"}]}. Se nao houver erros, responda {\"correcoes\":[]}.";
+const CAMPOS_IGNORADOS = ["id","savedAt","versao_biblica","tipo","estilo","perfil_igreja","perfil_publico","duracao","referencias","hinos","lexico","historico"];
+
+function distEdicao(a, b) {
+  const m = a.length, n = b.length, d = [];
+  for (let i = 0; i <= m; i++) d[i] = [i];
+  for (let j = 1; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++)
+    d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+  return d[m][n];
+}
+
+// Pede a IA uma lista curta de correcoes de grafia e aplica so as que forem pequenas e seguras.
+// Se algo falhar, devolve o texto original sem erro.
+async function corrigirOrtografia(obj) {
+  try {
+    const textos = [];
+    const colher = v => {
+      if (typeof v === "string") textos.push(v);
+      else if (Array.isArray(v)) v.forEach(colher);
+      else if (v && typeof v === "object") Object.keys(v).forEach(k => { if (CAMPOS_IGNORADOS.indexOf(k) < 0) colher(v[k]); });
+    };
+    colher(obj);
+    const todo = textos.join("\n");
+    if (todo.length < 20) return { obj: obj, n: 0 };
+    const r = await callAPI(REVISAO_SYS, todo, 1500);
+    const pares = (Array.isArray(r && r.correcoes) ? r.correcoes : []).filter(c =>
+      c && typeof c.errado === "string" && typeof c.correto === "string" &&
+      c.errado !== c.correto && c.errado.length >= 3 && c.errado.length <= 60 &&
+      todo.indexOf(c.errado) >= 0 &&
+      distEdicao(c.errado, c.correto) <= Math.max(2, Math.floor(c.errado.length * 0.34))
+    ).slice(0, 40);
+    if (pares.length === 0) return { obj: obj, n: 0 };
+    const aplicar = v => {
+      if (typeof v === "string") { let t = v; pares.forEach(c => { t = t.split(c.errado).join(c.correto); }); return t; }
+      if (Array.isArray(v)) return v.map(aplicar);
+      if (v && typeof v === "object") { const o = {}; Object.keys(v).forEach(k => { o[k] = CAMPOS_IGNORADOS.indexOf(k) < 0 ? aplicar(v[k]) : v[k]; }); return o; }
+      return v;
+    };
+    return { obj: aplicar(obj), n: pares.length };
+  } catch (e) { return { obj: obj, n: 0 }; }
+}
+// ==== FIM REVISAO ====
+
 function buildMainSys(versao, estilo, perfilIgreja, perfilPublico, duracao) {
   const v = VERSOES.find(x => x.id === versao) || VERSOES[0];
   const pi = PERFIS_IGREJA.find(x => x.id === perfilIgreja);
@@ -176,10 +222,10 @@ function buildMainSys(versao, estilo, perfilIgreja, perfilPublico, duracao) {
   const instrPI = pi ? pi.instrucao : "";
   const instrPP = pp ? ("PERFIL DO PUBLICO: " + pp.label + ". Adapte linguagem, profundidade, exemplos, aplicacoes e intensidade do apelo para este publico.") : "";
   const instrDur = dur ? dur.instrucao : "";
-  return "Voce e assistente de homiletica evangelica batista. " + (ESTILO_INST[estilo]||ESTILO_INST.original) + " " + DIRETRIZ + " " + instrPI + " " + instrPP + " " + instrDur + " VERSAO BIBLICA: " + v.label + " " + v.desc + ". PROIBIDO citar pregadores ou teologos nominalmente. ILUSTRACOES: exatamente 2 no sermao todo (1 biblica + 1 cotidiano) em pontos diferentes. O sermao deve parecer preparado especificamente para esta congregacao. " + PONTE_INSTR + " " + TRANSICAO_INSTR + " " + LEXICO_PLURAIS + " Responda SOMENTE com JSON valido sem markdown: {\"titulo\":\"...\",\"pericope\":\"...\",\"versao_biblica\":\"" + v.label + " - " + v.desc + "\",\"tema\":\"PROPOSICAO do sermao: frase completa que contem o substantivo plural-chave\",\"introducao\":\"paragrafos por \\n\",\"pontos\":[{\"numero\":1,\"titulo\":\"...\",\"exposicao\":\"paragrafos por \\n\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":2,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":3,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":null}],\"conclusao\":\"paragrafos por \\n\",\"apelo\":\"paragrafos por \\n\",\"referencias\":[{\"tipo\":\"Biblia\",\"descricao\":\"BIBLIA SAGRADA. " + v.desc + ". [cidade]: [editora], [ano].\"}]}";
+  return "Voce e assistente de homiletica evangelica batista. " + (ESTILO_INST[estilo]||ESTILO_INST.original) + " " + DIRETRIZ + " " + instrPI + " " + instrPP + " " + instrDur + " VERSAO BIBLICA: " + v.label + " " + v.desc + ". PROIBIDO citar pregadores ou teologos nominalmente. ILUSTRACOES: exatamente 2 no sermao todo (1 biblica + 1 cotidiano) em pontos diferentes. O sermao deve parecer preparado especificamente para esta congregacao. " + PONTE_INSTR + " " + TRANSICAO_INSTR + " " + LEXICO_PLURAIS + " " + ORTOGRAFIA_INSTR + " Responda SOMENTE com JSON valido sem markdown: {\"titulo\":\"...\",\"pericope\":\"...\",\"versao_biblica\":\"" + v.label + " - " + v.desc + "\",\"tema\":\"PROPOSICAO do sermao: frase completa que contem o substantivo plural-chave\",\"introducao\":\"paragrafos por \\n\",\"pontos\":[{\"numero\":1,\"titulo\":\"...\",\"exposicao\":\"paragrafos por \\n\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":2,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":\"...\"},{\"numero\":3,\"titulo\":\"...\",\"exposicao\":\"...\",\"ilustracao_biblica\":null,\"ilustracao_cotidiano\":null,\"fonte_ilustracao_cotidiano\":null,\"aplicacao\":\"...\",\"transicao\":null}],\"conclusao\":\"paragrafos por \\n\",\"apelo\":\"paragrafos por \\n\",\"referencias\":[{\"tipo\":\"Biblia\",\"descricao\":\"BIBLIA SAGRADA. " + v.desc + ". [cidade]: [editora], [ano].\"}]}";
 }
 
-const ESBOCO_SYS = "Assistente de homiletica batista. Gere APENAS esboco rapido - esqueleto para o pregador desenvolver. " + DIRETRIZ + " Sem longos paragrafos. " + LEXICO_PLURAIS + " JSON valido sem markdown: {\"titulo\":\"...\",\"pericope\":\"...\",\"tema\":\"PROPOSICAO do esboco: frase completa que contem o substantivo plural-chave\",\"objetivo\":\"1 frase\",\"introducao_gancho\":\"...\",\"pontos\":[{\"numero\":1,\"titulo\":\"...\",\"ideia_central\":\"1-2 frases\",\"aplicacao\":\"1 frase\"},{\"numero\":2,\"titulo\":\"...\",\"ideia_central\":\"...\",\"aplicacao\":\"...\"},{\"numero\":3,\"titulo\":\"...\",\"ideia_central\":\"...\",\"aplicacao\":\"...\"}],\"conclusao_ideia\":\"...\",\"apelo_ideia\":\"...\"}";
+const ESBOCO_SYS = "Assistente de homiletica batista. Gere APENAS esboco rapido - esqueleto para o pregador desenvolver. " + DIRETRIZ + " Sem longos paragrafos. " + LEXICO_PLURAIS + " " + ORTOGRAFIA_INSTR + " JSON valido sem markdown: {\"titulo\":\"...\",\"pericope\":\"...\",\"tema\":\"PROPOSICAO do esboco: frase completa que contem o substantivo plural-chave\",\"objetivo\":\"1 frase\",\"introducao_gancho\":\"...\",\"pontos\":[{\"numero\":1,\"titulo\":\"...\",\"ideia_central\":\"1-2 frases\",\"aplicacao\":\"1 frase\"},{\"numero\":2,\"titulo\":\"...\",\"ideia_central\":\"...\",\"aplicacao\":\"...\"},{\"numero\":3,\"titulo\":\"...\",\"ideia_central\":\"...\",\"aplicacao\":\"...\"}],\"conclusao_ideia\":\"...\",\"apelo_ideia\":\"...\"}";
 const LEXICO_SYS = "Especialista em grego koine e hebraico biblico. Identifique 4-6 palavras-chave teologicamente relevantes. JSON valido sem markdown: {\"palavras\":[{\"original\":\"...\",\"transliteracao\":\"...\",\"idioma\":\"Grego ou Hebraico\",\"traducao\":\"...\",\"significado\":\"2-3 frases\"}]}";
 const CHAT_SYS = "Exegeta e teologo evangelico batista. Responda com profundidade exegetica e contexto historico-teologico. " + DIRETRIZ + " Linguagem pastoral e acessivel. Quando o pregador pedir para estruturar sermao, esboco ou estudo biblico a partir de um texto, aplique tambem esta regra. " + LEXICO_PLURAIS;
 const COMP_SYS = "Especialista em traducao biblica comparativa. Compare versoes destacando diferencas importantes e implicacoes pastorais. JSON valido sem markdown: {\"passagem\":\"...\",\"versoes\":[{\"sigla\":\"...\",\"nome\":\"...\",\"texto\":\"...\"}],\"analise\":{\"palavras_chave\":[{\"palavra\":\"...\",\"observacao\":\"...\"}],\"observacoes_gerais\":\"...\"}}";
@@ -499,7 +545,7 @@ function ModoPregacao({ sermon, onClose, onFinalizar }) {
 
 function PainelEsboco() {
   const [p, setP] = useState(""), [esboco, setEsboco] = useState(null), [loading, setLoading] = useState(false), [error, setError] = useState("");
-  const gerar = async () => { if (!p.trim()) return; setLoading(true); setError(""); setEsboco(null); try { const r = await callAPI(ESBOCO_SYS, "Esboco para: " + p, 2000); setEsboco(r); } catch(e) { setError("Erro: " + e.message); } setLoading(false); };
+  const gerar = async () => { if (!p.trim()) return; setLoading(true); setError(""); setEsboco(null); try { const r = await callAPI(ESBOCO_SYS, "Esboco para: " + p, 2000); const fin = await corrigirOrtografia(r); setEsboco(fin.obj); } catch(e) { setError("Erro: " + e.message); } setLoading(false); };
   const copiar = () => { if (!esboco) return; const t = ["ESBOCO - " + esboco.pericope, "Titulo: " + esboco.titulo, "Tema: " + esboco.tema, "", ...(esboco.pontos||[]).map(pt => "PONTO " + rn(pt.numero) + " - " + pt.titulo + "\n  Ideia: " + pt.ideia_central + "\n  Aplicacao: " + pt.aplicacao), "", "Conclusao: " + esboco.conclusao_ideia, "Apelo: " + esboco.apelo_ideia].join("\n"); navigator.clipboard.writeText(t).catch(() => {}); };
   return <div>
     <p style={{ fontSize:13, color:"#a08040", marginBottom:14, fontStyle:"italic" }}>Gera apenas o esqueleto para voce desenvolver com suas proprias palavras.</p>
@@ -1002,7 +1048,9 @@ export default function App() {
       parsed.referencias = Array.isArray(parsed.referencias) ? parsed.referencias : [];
       parsed.versao_biblica = parsed.versao_biblica || selectedVersao;
       parsed.lexico = null; parsed.historico = [];
-      setSermon(parsed); setActiveTab("introducao");
+      const fin = await corrigirOrtografia(parsed);
+      setSermon(fin.obj); setActiveTab("introducao");
+      if (fin.n) { setSaveMsg(fin.n + " correcao(oes) de ortografia aplicada(s)"); setTimeout(() => setSaveMsg(""), 6000); }
     } catch(e) { setError("Erro: " + e.message); }
     setLoading(false);
   };
